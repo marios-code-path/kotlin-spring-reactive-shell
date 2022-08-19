@@ -1,0 +1,11 @@
+1660930988559:help
+1660930998180:find-user --username tux
+1660931001049:find-user --username tuxedo
+1660931031962:find-user --username mario
+1660931042284:login --username mario --password 390
+1660931049536:login --username mario --password 12345
+1660931051676:help
+1660931064225:call --username tux --message Hello
+1660931109046:login --username tux --password 12345
+1660931111304:call --username tux --message Hello
+1660931123698:exit
