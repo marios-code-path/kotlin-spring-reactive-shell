@@ -9,3 +9,175 @@
 1660931109046:login --username tux --password 12345
 1660931111304:call --username tux --message Hello
 1660931123698:exit
+1660931266012:call --username tux --message Hello
+1660931326355:exit
+1660931505949:call --username tux --message Hello
+1660931516085:login --username tux --password 12345
+1660931517650:call --username tux --message Hello
+1660931558343:exit
+1660931583647:call --username tux --message Hello
+1660931586877:login --username tux --password 12345
+1660931588987:call --username tux --message Hello
+1660931600060:login --username mario --password 12345
+1660931601603:call --username tux --message Hello
+1660931618322:exit
+1660931642388:call --username tux --message Hello
+1660931649963:login --username tux --password 12345
+1660931652027:call --username tux --message Hello
+1660931656747:login --username mario --password 12345
+1660931657881:call --username tux --message Hello
+1660931682779:exit
+1660931701080:login --username mario --password 12345
+1660931703354:call --username tux --message Hello
+1660931732641:exit
+1660931753544:login --username mario --password 12345
+1660931755316:call --username tux --message Hello
+1660931882623:exit
+1660931900800:login --username mario --password 12345
+1660931902849:call --username tux --message Hello
+1660931930810:exit
+1660932009295:login --username mario --password 12345
+1660932010599:call --username tux --message Hello
+1660932025176:exit
+1660932041067:login --username mario --password 12345
+1660932042388:call --username tux --message Hello
+1660932052082:exit
+1660932084776:call --username tux --message Hello
+1660932086813:login --username mario --password 12345
+1660932088224:call --username tux --message Hello
+1660932104381:login --username tux --password 12345
+1660932105589:call --username tux --message Hello
+1660932108293:login --username mario --password 12345
+1660932109395:call --username tux --message Hello
+1660932402441:exit
+1660932430175:login --username mario --password 12345
+1660932437589:login --username spring --password 12345
+1660932445980:call --username tux --message Hello
+1660932451374:receive
+1660932458165:login --username tux --password 12345
+1660932460631:receive
+1660932470255:call --username spring --message Hello
+1660932477618:receive
+1660932538197:exit
+1660932565292:login --username spring --password 12345
+1660932577133:call --username spring --message Voicemail
+1660932593499:call --username tux --message SMS
+1660932595982:receive
+1660932602432:login --username tux --password 12345
+1660932604418:receive
+1660933226235:exit
+1660933243995:receive
+1660933255974:login --username spring --password 12345
+1660933266848:call --username tux --message Hey there!
+1660933268950:receive
+1660933275300:login --username tux --password 12345
+1660933281116:receive
+1660933312954:login --username spring --password 12345
+1660933319142:call --username tux --message Hi
+1660933324817:login --username tux --password 12345
+1660933326663:receive
+1660933374895:exit
+1660933395192:login --username spring --password 12345
+1660933398764:call --username tux --message Hi
+1660933405748:call --username tux --message "Its me, Spring!"
+1660933408743:login --username tux --password 12345
+1660933410716:receive
+1660938600663:help
+1660938735629:new-user --name skag --password 1234
+1660938779505:exit
+1660938804262:new-user --name skag --password 1234
+1660938808380:login --username tux --password 12345
+1660938810150:new-user --name skag --password 1234
+1660938829432:login --username spring --password 12345
+1660938830775:new-user --name skag --password 1234
+1660938834839:stacktrace
+1660938961065:login --username spring --password 12345
+1660938962971:new-user --name skag --password 1234
+1660938979389:login --username skag --password 9302
+1660938981928:login --username skag --password 1234
+1660938990109:help
+1660938998526:call --username tux --message hey
+1660939000285:receive
+1660939008451:login --username spring --password 12345
+1660939010020:receive
+1660939014928:login --username tux --password 12345
+1660939015826:receive
+1660939258117:login --username tux --password 12345
+1660939264430:call --username spring --message hey
+1660939271032:login --username spring --password 12345
+1660939323422:call --username spring --message hey
+1660939325834:receive
+1660939330181:login --username tux --password 12345
+1660939331413:receive
+1660939346976:call --username tux --message hey
+1660939350646:call --username spring --message hey
+1660939353809:login --username spring --password 12345
+1660939358292:call --username tux --message hey
+1660939951446:login --username tux --password 12345
+1660939952570:receive
+1660939956168:login --username spring --password 12345
+1660939960605:call --username tux --message hey
+1660940117659:exit
+1660940138131:login --username spring --password 12345
+1660940139850:call --username tux --message hey
+1660940144929:login --username tux --password 12345
+1660940147570:receive
+1660941521906:exit
+1660941554395:receive
+1660941572808:login --username spring --password 12345
+1660941574303:receive
+1660941578719:call --username tux --message hey
+1660941585717:login --username tux --password 12345
+1660941587399:receive
+1660941636966:login --username tux --password 123432
+1660941644596:login --username tux --password 12345
+1660941647061:login --username tuxa --password 12345
+1660943204478:exit
+1660943226162:login --username tuxa --password 12345
+1660943231653:login --username spring --password 12345
+1660943237273:call --username tux --message hello tux
+1660943317786:exit
+1660943340447:login --username spring --password 12345
+1660943341927:call --username tux --message hello tux
+1660943348319:login --username tux --password 12345
+1660943350061:receive
+1660943452915:exit
+1660943468595:whoAmI
+1660943471976:who-am-i
+1660943480860:login --username tux --password 12345
+1660943484052:who-am-i
+1660943614530:exit
+1660943653081:login --username tux --password 12345
+1660943654760:who-am-i
+1660943700850:exit
+1660943719410:login --username tux --password 12345
+1660943720683:who-am-i
+1660943929068:exit
+1660943966767:help
+1660943998003:who-am-i
+1660951873206:login --username tux --password 12345
+1660952068947:exit
+1660952086822:login --username tux --password 12345
+1660952265629:exit
+1660952524375:login --username tux --password 12345
+1660952719231:exit
+1660952742294:login --username tux --password 12345
+1660952746242:who-am-i
+1660952774130:login --username tux --password 123453
+1660952776317:who-am-i
+1660952778071:login --username tux --password 12345
+1660952779156:who-am-i
+1660952971027:exit
+1660952987511:who-am-i
+1660952989604:login --username tux --password 12345
+1660952992636:who-am-i
+1660953178737:exit
+1660953222010:login --username tux --password 12345
+1660953223656:who-am-i
+1660953303847:exit
+1660953423931:login --username tux --password 12345
+1660953425134:who-am-i
+1660953667410:exit
+1660953686035:login --username tux --password 12345
+1660953689708:who-am-i
+1660954779109:exit
