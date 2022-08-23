@@ -1,5 +1,7 @@
 # Build a Spring Shell App for RSocket with Security
 
+> **_NOTE:_** This is the old (incomplete) project.. it didnt satisfy a requirement in preparing a LOCAL security experience. See the adjacent project which utilizes RSocket.
+
 What if I told you that the Spring Framework supportes creating [Shell](https://spring.io/projects/spring-shell) tools programatically? I say this because I've wanted to always interact with my rsocket services without having to memorize a bunch of command-line utilities. However they are optional, they are also very useful for making requests againsts you services. I would recommend writing a small yet cogent tool that also recognizes the API being talked to - YOUR application!.  
 
 Spring Shell offers this potential and in this guide, we will make use of connecting and interacting with our `@Secured` RSocket services!
