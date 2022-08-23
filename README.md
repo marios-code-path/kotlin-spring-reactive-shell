@@ -1,6 +1,8 @@
-# Build a Spring Shell App w/ Security
+# Build a Spring Shell App for RSocket with Security
 
-What if I told you that the Spring Framework supportes creating [Shell](https://spring.io/projects/spring-shell) tools programatically?
+What if I told you that the Spring Framework supportes creating [Shell](https://spring.io/projects/spring-shell) tools programatically? I say this because I've wanted to always interact with my rsocket services without having to memorize a bunch of command-line utilities. However they are optional, they are also very useful for making requests againsts you services. I would recommend writing a small yet cogent tool that also recognizes the API being talked to - YOUR application!.  
+
+Spring Shell offers this potential and in this guide, we will make use of connecting and interacting with our `@Secured` RSocket services!
 
 # Motivation
 
@@ -65,7 +67,7 @@ class TelephoneConfiguration {
 
 The first two users we can login with having the same passwords - Spring and Tux - have different roles. The 'Tux' user can only receive messages, while the 'Spring' user can make calls. This give us enough use cases to demonstrate just the couple ideas in this example.
 
-### Reactive Authentication in a local App
+### A Custom Reactive Authentication Manager
 
 The next component also comes from Spring Security. This `AuthenticationManager` will be subclassed to do mostly boilerplate of credential matching before the active user is placed into the [SecurityContextHolder]().
 

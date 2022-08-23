@@ -1,5 +1,6 @@
 package com.example.telephone.commands
 
+import com.example.telephone.service.SecurityContextRepository
 import org.springframework.security.access.annotation.Secured
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.annotation.CurrentSecurityContext
@@ -14,30 +15,33 @@ import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 
 @ShellComponent
-class TelephoneCommands {
+class TelephoneCommands(val repo: SecurityContextRepository) {
     val callQueue: Queue<String> = ConcurrentLinkedQueue()
 
     @ShellMethod
     @ShellMethodAvailability("checkLoggedIn")
     @Secured("ROLE_CALL")
     fun call(@ShellOption username: String,
-             @ShellOption message: String,
-             @CurrentSecurityContext(expression="authentication.name")
-             currentUser: String) {
-        val message = "$currentUser: @$username - $message"
-        callQueue.offer(message)
-    }
+             @ShellOption message: String) =
+            repo.load()
+                    .doOnEach { signal ->
+                        val currentUser = signal.get()?.authentication?.name
+                        val message = "$currentUser: @$username - $message"
+                        callQueue.offer(message)
+                    }
+                    .block()
 
     @ShellMethod
     @ShellMethodAvailability("checkLoggedIn")
     @Secured("ROLE_RECEIVE")
-    fun receive() {
-        callQueue.stream().forEach {
-            println(it)
-        }
-    }
+    fun receive() = repo
+            .load()
+            .doOnEach{ signal ->
+                callQueue.stream().forEach(::println)
+            }
+            .block()
 
-    fun checkLoggedIn(): Availability = when (SecurityContextHolder.getContext().authentication) {
+    fun checkLoggedIn(): Availability = when (repo.load().block() != null) {
                 null -> Availability.unavailable("You are not logged in.")
                 else -> Availability.available()
             }

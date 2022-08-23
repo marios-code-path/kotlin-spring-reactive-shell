@@ -181,3 +181,114 @@
 1660953686035:login --username tux --password 12345
 1660953689708:who-am-i
 1660954779109:exit
+1661184818226:help
+1661184824337:login --username tux --password 12345
+1661184827633:who-am-i
+1661184902508:login --username tux --password 12345
+1661184903450:who-am-i
+1661184933114:login --username tux --password 12345
+1661184934085:who-am-i
+1661184948667:exit
+1661184961475:login --username tux --password 12345
+1661184962916:who-am-i
+1661184981011:exit
+1661184991739:who-am-i
+1661184995485:login --username tux --password 12345
+1661184996467:who-am-i
+1661185126764:login --username tux --password 12345
+1661185127598:who-am-i
+1661185289471:exit
+1661185375094:login --username tux --password 12345
+1661185377257:who-am-i
+1661185472451:exi
+1661185473803:exit
+1661185485366:login --username tux --password 12345
+1661185486958:who
+1661187430996:exit
+1661187442390:user
+1661187445062:who
+1661187695154:exit
+1661187714907:login --username tux --password 12345
+1661187716226:who
+1661187717881:who-am-i
+1661187724584:slef
+1661187775058:login --username tux --password 12345
+1661187776889:who-am-i
+1661187843954:exit
+1661187860205:login --username tux --password 12345
+1661187861667:who-am-i
+1661187881955:login --username tux --password 123453
+1661187883572:login --username tux --password 12345
+1661189401609:exit
+1661189418946:login --username tux --password 12345
+1661189421715:who-am-i
+1661189447929:reactive-who-am-i
+1661191667847:exit
+1661191751960:reactive-who-am-i
+1661191754272:who-am-i
+1661191758251:login --username tux --password 12345
+1661191759399:who-am-i
+1661191762551:reactive-who-am-i
+1661191866543:exit
+1661191879768:reactive-who-am-i
+1661191882648:login --username tux --password 12345
+1661191883512:reactive-who-am-i
+1661191886429:who-am-i
+1661192048624:login --username tux --password 123453
+1661192049929:login --username tux --password 12345
+1661192518369:who-am-i
+1661192520048:login --username tux --password 12345
+1661192555407:exit
+1661192568003:login --username tux --password 12345
+1661192570313:who-am-i
+1661192572619:reactive-who-am-i
+1661193385069:exit
+1661193400126:login --username tux --password 12345
+1661193401719:reactive-who-am-i
+1661197677863:exit
+1661197690690:login --username tux --password 12345
+1661197691738:reactive-who-am-i
+1661197746129:exit
+1661197757208:login --username tux --password 12345
+1661197759218:reactive-who-am-i
+1661197761129:who-am-i
+1661197805401:exit
+1661197816065:reactive-who-am-i
+1661197817840:login --username tux --password 12345
+1661197819455:reactive-who-am-i
+1661197890251:exit
+1661197901864:login --username tux --password 12345
+1661197903000:reactive-who-am-i
+1661198499087:exit
+1661198511551:login --username tux --password 12345
+1661198512640:reactive-who-am-i
+1661198532840:exit
+1661198552046:login --username tux --password 12345
+1661198554719:reactive-who-am-i
+1661198645189:exit
+1661198660782:login --username tux --password 12345
+1661198759421:login --username tux --password 123457
+1661198760783:login --username tux --password 12345
+1661281445545:login --username tux --password 123457
+1661281446439:login --username tux --password 12345
+1661281460168:reactive-who-am-i
+1661281464713:stacktrace
+1661281538280:login --username tux --password 12345
+1661281705983:exit
+1661281722203:login --username tux --password 12345
+1661281725374:reactive-who-am-i
+1661282307045:exit
+1661282321542:reactive-who-am-i
+1661282324378:login --username tux --password 12345
+1661282325649:reactive-who-am-i
+1661282333473:call --message hi --username spring
+1661282362297:exit
+1661282379225:login --username tux --password 12345
+1661282380953:call --message hi --username spring
+1661282393425:exit
+1661282411633:login --username tux --password 12345
+1661282413248:call --message hi --username spring
+1661282421623:login --username spring --password 12345
+1661282428671:receive
+1661282446408:exit
+1661282487762:exit

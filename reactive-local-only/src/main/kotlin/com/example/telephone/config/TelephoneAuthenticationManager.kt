@@ -4,9 +4,11 @@ import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.userdetails.MapReactiveUserDetailsService
+import org.springframework.security.crypto.password.PasswordEncoder
 import reactor.core.publisher.Mono
 
-class ReactiveAuth(private val userDetailService: MapReactiveUserDetailsService) : ReactiveAuthenticationManager {
+class TelephoneAuthenticationManager(private val userDetailService: MapReactiveUserDetailsService,
+                                     private val encoder: PasswordEncoder) : ReactiveAuthenticationManager {
     override fun authenticate(authen: Authentication): Mono<Authentication> {
         val credential = authen.credentials.toString()
 
@@ -14,9 +16,9 @@ class ReactiveAuth(private val userDetailService: MapReactiveUserDetailsService)
                 .findByUsername(authen.name)
                 .switchIfEmpty(Mono.error(Exception("User Not Found")))
                 .map { user ->
-                    if (!user.password.equals(credential, true))
+                    if (!encoder.matches(credential, user.password))
                         throw Exception("User Authentication Error.")
-                    UsernamePasswordAuthenticationToken(user, user.password, user.authorities)
+                    UsernamePasswordAuthenticationToken.authenticated(user, user.password, user.authorities)
                 }
     }
 }

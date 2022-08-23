@@ -1,13 +1,12 @@
 package com.example.telephone.config
 
-import io.netty.util.internal.NoOpTypeParameterMatcher
+import com.example.telephone.service.SecurityContextRepository
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.MapReactiveUserDetailsService
 import org.springframework.security.core.userdetails.User
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.DelegatingPasswordEncoder
 import org.springframework.security.crypto.password.NoOpPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -38,8 +37,12 @@ class TelephoneConfiguration {
                 setPasswordEncoder(passwordEncoder)
             }
 
+    @Bean
+    fun contextRepository() = SecurityContextRepository()
 
+//
 //    @Bean
-//    fun authenticationManager(userDetailService: MapReactiveUserDetailsService) =
-//            ReactiveAuth(userDetailService)
+//    fun authenticationManager(userDetailService: MapReactiveUserDetailsService,
+//                              passwordEncoder: PasswordEncoder) =
+//            TelephoneAuthenticationManager(userDetailService, passwordEncoder)
 }
