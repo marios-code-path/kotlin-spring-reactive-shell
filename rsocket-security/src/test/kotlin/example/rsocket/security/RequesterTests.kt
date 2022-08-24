@@ -2,6 +2,7 @@ package example.rsocket.security
 
 import example.rsocket.clientconfig.RequesterFactory
 import example.rsocket.service.TreeService
+import io.rsocket.exceptions.ApplicationErrorException
 import io.rsocket.exceptions.RejectedSetupException
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
@@ -58,8 +59,18 @@ class RequesterTests {
                             .assertThat(it)
                             .isNotNull()
                             .containsAnyOf(*TreeService.LEAF_COLORS.toTypedArray())
-                    println("IT = $it")
                 }
                 .verifyComplete()
+    }
+
+    @Test
+    fun `unprivileged access to request for shake`(@Autowired requesterFactory: RequesterFactory) {
+        val request = requesterFactory.requester("gardner", "superuser")
+                .route("shake")
+                .retrieveMono<String>()
+
+        StepVerifier
+                .create(request)
+                .verifyError(ApplicationErrorException::class.java)
     }
 }

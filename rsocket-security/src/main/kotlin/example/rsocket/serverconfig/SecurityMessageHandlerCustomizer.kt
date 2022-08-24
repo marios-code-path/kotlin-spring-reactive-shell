@@ -8,8 +8,6 @@ import org.springframework.security.messaging.handler.invocation.reactive.Authen
 class SecurityMessageHandlerCustomizer : RSocketMessageHandlerCustomizer {
     override fun customize(messageHandler: RSocketMessageHandler) {
         val ar: HandlerMethodArgumentResolver = AuthenticationPrincipalArgumentResolver()
-        messageHandler
-                .argumentResolverConfigurer
-                .addCustomResolver(ar)
+        messageHandler.argumentResolverConfigurer.addCustomResolver(ar)
     }
 }

@@ -3,8 +3,10 @@ package example.rsocket
 import example.rsocket.clientconfig.RequesterFactory
 import example.rsocket.serverconfig.SecurityConfiguration
 import example.rsocket.serverconfig.SecurityMessageHandlerCustomizer
-import example.rsocket.service.TreeController
+import example.rsocket.service.TreeControllerMapping
+import example.rsocket.service.TreeService
 import example.rsocket.service.TreeServiceImpl
+import example.rsocket.service.TreeServiceSecurity
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
@@ -21,20 +23,20 @@ import org.springframework.stereotype.Controller
 class App {
 
     @Configuration
-    class AppSecurityConfiguration : SecurityConfiguration()
+    class ServerSecurityConfiguration : SecurityConfiguration()
 
     @Controller
-    class AppTreeController(service: TreeServiceImpl) : TreeController(service)
+    class TreeController(impl: TreeServiceImpl) : TreeControllerMapping, TreeServiceSecurity, TreeService by impl
 
     @Bean
-    fun treeService(): TreeServiceImpl = TreeServiceImpl()
+    fun treeServiceBean(): TreeServiceImpl = TreeServiceImpl()
 
     @Bean
-    fun messageHandlerCustomizer() = SecurityMessageHandlerCustomizer()
+    fun messageHandlerCustomizerBean() = SecurityMessageHandlerCustomizer()
 
     @Bean
-    fun requesterFactory(@Value("\${spring.rsocket.server.port}") port: String,
-                         builder: RSocketRequester.Builder
+    fun requesterFactoryBean(@Value("\${spring.rsocket.server.port}") port: String,
+                             builder: RSocketRequester.Builder
     ): RequesterFactory = RequesterFactory(port, builder)
 
     companion object {

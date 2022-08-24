@@ -32,5 +32,4 @@ open class SecurityConfiguration {
                 }
                 .simpleAuthentication(Customizer.withDefaults())
                 .build()
-
 }
