@@ -1,5 +1,7 @@
 package example.rsocket.security
 
+import example.rsocket.service.TreeService.Companion.LEAF_COLORS
+import example.rsocket.service.TreeServiceImpl
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import reactor.test.StepVerifier
@@ -7,14 +9,14 @@ import reactor.test.StepVerifier
 class TreeServiceTests {
     @Test
     fun shakesForLeaves() {
-        val tree = TreeService()
+        val tree = TreeServiceImpl()
 
         StepVerifier
-                .create(tree.shakeForLeaves())
+                .create(tree.rakeForLeaves())
                 .thenConsumeWhile { leafColor ->
                     Assertions
                             .assertThat(leafColor)
-                            .containsAnyOf(*tree.colors.toTypedArray())
+                            .containsAnyOf(*LEAF_COLORS.toTypedArray())
 
                     true
                 }
@@ -23,14 +25,14 @@ class TreeServiceTests {
 
     @Test
     fun shakesForLeaf() {
-        val tree = TreeService()
+        val tree = TreeServiceImpl()
 
         StepVerifier
                 .create(tree.shakeForLeaf())
                 .assertNext { color ->
                     Assertions
                             .assertThat(color)
-                            .containsAnyOf(*tree.colors.toTypedArray())
+                            .containsAnyOf(*LEAF_COLORS.toTypedArray())
                 }
                 .verifyComplete()
     }

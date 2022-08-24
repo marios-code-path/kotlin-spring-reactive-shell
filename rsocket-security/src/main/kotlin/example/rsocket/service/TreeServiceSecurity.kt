@@ -1,4 +1,4 @@
-package example.rsocket.security
+package example.rsocket.service
 
 import org.springframework.security.access.annotation.Secured
 import reactor.core.publisher.Flux
