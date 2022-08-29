@@ -2,6 +2,7 @@ package com.example.telephone.commands
 
 import com.example.telephone.service.SecurityContextRepository
 import org.springframework.security.access.annotation.Secured
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.annotation.CurrentSecurityContext
 import org.springframework.security.core.context.SecurityContextHolder
@@ -20,7 +21,7 @@ class TelephoneCommands(val repo: SecurityContextRepository) {
 
     @ShellMethod
     @ShellMethodAvailability("checkLoggedIn")
-    @Secured("ROLE_CALL")
+    @PreAuthorize("CALL")
     fun call(@ShellOption username: String,
              @ShellOption message: String) =
             repo.load()
@@ -33,7 +34,7 @@ class TelephoneCommands(val repo: SecurityContextRepository) {
 
     @ShellMethod
     @ShellMethodAvailability("checkLoggedIn")
-    @Secured("ROLE_RECEIVE")
+    @PreAuthorize("hasRole('RECEIVE')")
     fun receive() = repo
             .load()
             .doOnEach{ signal ->

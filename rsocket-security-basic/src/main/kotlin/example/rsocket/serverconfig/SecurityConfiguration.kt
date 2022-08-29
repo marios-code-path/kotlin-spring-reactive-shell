@@ -1,6 +1,7 @@
 package example.rsocket.serverconfig
 
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Profile
 import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.rsocket.RSocketSecurity
 import org.springframework.security.core.userdetails.MapReactiveUserDetailsService
@@ -24,7 +25,7 @@ open class SecurityConfiguration {
     )
 
     @Bean
-    open fun securityAuthorizer(security: RSocketSecurity) = security
+    open fun simpleSecurityAuthentication(security: RSocketSecurity) = security
                 .authorizePayload { spec ->
                     spec
                             .anyExchange()
@@ -32,4 +33,11 @@ open class SecurityConfiguration {
                 }
                 .simpleAuthentication(Customizer.withDefaults())
                 .build()
+
+    @Bean
+    @Profile("bearer")
+    open fun bearerSecurityAuthentication(security: RSocketSecurity) {
+
+    }
+
 }

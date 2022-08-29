@@ -16,5 +16,4 @@ class SecurityContextRepository {
     fun load(): Mono<SecurityContext> = Mono
             .just(securityContext!!)
             .contextWrite(ReactiveSecurityContextHolder.withSecurityContext(Mono.just(securityContext!!)))
-
 }

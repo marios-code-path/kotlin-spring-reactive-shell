@@ -1,0 +1,14 @@
+1661319925355:help
+1661319927456:login
+1661319933681:login --username mario --password 13409
+1661319940083:rake
+1661319955514:login --username gardner --password superuser
+1661319959040:rake
+1661319987577:exit
+1661320003978:login --username gardner --password superuser
+1661320005993:rake
+1661320013969:login --username gardner --password superuser3
+1661320017096:rake
+1661320025456:login --username gardner --password superuser
+1661320026897:rake
+1661320028088:exit
