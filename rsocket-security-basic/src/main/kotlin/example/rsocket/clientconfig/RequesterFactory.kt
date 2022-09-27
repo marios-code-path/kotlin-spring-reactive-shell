@@ -26,5 +26,4 @@ open class RequesterFactory(private val port: String,
                                 .doOnError { println("CLOSED") }
                                 .doFinally { println("DISCONNECTED") }
                     }
-
 }

@@ -12,7 +12,7 @@ import java.util.*
 
 // TODO Shutdown the application.
 @ShellComponent
-class TreeShell {
+class TreeCommands {
 
     @Autowired
     private lateinit var requesterFactory: RequesterFactory
@@ -38,6 +38,4 @@ class TreeShell {
         true -> Availability.available()
         else -> Availability.unavailable("Not Logged In")
     }
-
-
 }

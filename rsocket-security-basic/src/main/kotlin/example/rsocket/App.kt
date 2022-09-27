@@ -26,10 +26,8 @@ class App {
     class ServerSecurityConfiguration : SecurityConfiguration()
 
     @Controller
-    class TreeController(impl: TreeServiceImpl) : TreeControllerMapping, TreeServiceSecurity, TreeService by impl
-
-    @Bean
-    fun treeServiceBean(): TreeServiceImpl = TreeServiceImpl()
+    class ServerTreeController : TreeControllerMapping,
+            TreeServiceSecurity, TreeService by TreeServiceImpl()
 
     @Bean
     fun messageHandlerCustomizerBean() = SecurityMessageHandlerCustomizer()
