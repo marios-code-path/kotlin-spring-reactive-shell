@@ -58,42 +58,44 @@ Secondly, enabling security on our methods in another concern. Since we can alre
 
 ### Configure RSocket Security 
 
-Spring Security applies RSocket security through the standard [RSocket Interceptors](). Interceptors have the ability to work during, before or after a scope in processing. For RSocket, this means any of the following levels:
+Spring Security applies RSocket security through [RSocket Interceptors](). Interceptors have the ability to work during, before or after a scope in processing. For RSocket, this means any of the following levels:
 
 * Transport level
 * At the level of accepting new connections
 * Performing requests
 * Responding to requests
 
-For accepting new connections level, Spring provides the [SecuritySocketAcceptorInterceptor]() that 
+Spring's [RSocketSecurity]() bean provides a nice DSL for configuring Simple, Basic, JWT, and custom authentication methods at these level, in addition to application-specific RBAC settings. This behavior works through a series of [PayloadExchangeMatchers]() within our Interceptor. It enables the enforcement of granular security concerns at the boundaries of each exchange. 
 
-The [RSocketSecurity]() bean provides a nice DSL for configuring Simple, Basic, JWT, and custom authentication methods, in addition to application-specific RBAC settings. 
+Lets look at the [SecuritySocketAcceptorInterceptorConfiguration]() class that sets up default security configuration which we will need for this demo. This class, imported by `@EnableRSocketSecurty`, will configure a [PayloadSocketAcceptorInterceptor]() using RSocketSecurity's DSL:
 
-By default, Spring Security RSocket provides a delegating interceptor called the[SecuritySocketAcceptorInterceptor]() that we provide an interceptor for. The [PayloadSocketAcceptorInterceptor]() interceptor is the primary target for for this, and as such will be 
-required in order for Spring Security to function with our RSocket server.
+```java
+package org.springframework.security.config.annotation.rsocket;
 
-Lets create a class that encapsulates all of the Security cusomizations we will need for this demo. We will configure a simple authentication strategy for our RSocket connections with the [RSocketSecurity]() class:
-
-```kotlin
-open class SecurityConfiguration {
-    @Bean
-    open fun simpleSecurityAuthentication(security: RSocketSecurity)
-            : PayloadSocketAcceptorInterceptor = security
-            .authorizePayload { spec ->
-                spec
-                        .anyExchange()
-                        .authenticated()
-            }
-            .simpleAuthentication(Customizer.withDefaults())
-            .build()
+class SecuritySocketAcceptorInterceptorConfiguration {
+    //...
+	private PayloadSocketAcceptorInterceptor defaultInterceptor(ObjectProvider<RSocketSecurity> rsocketSecurity) {
+		rsocket.basicAuthentication(Customizer.withDefaults())  // 1
+			.simpleAuthentication(Customizer.withDefaults())    // 2
+			.authorizePayload((authz) -> authz                  // 3
+				.setup().authenticated()                        // 4
+				.anyRequest().authenticated()                   
+				.matcher((e) -> MatchResult.match()).permitAll()
+			);
+    //...
 }
 ```
+The `authorizePayload` method decides how we can access the server, and thus is something you will want to customize. The operations we see configure above include:
 
-Another objective of this class is to configure the [ReactiveAuthenticationManager]() such that Roles and Users are available. In this case, we will insist that any request that is authenticated passes the interception.
+1) Basic credential passing for backwards compatability; for a time, before Simple was accepted as the leading spec.
+2) [Simple](https://github.com/rsocket/rsocket/blob/master/Extensions/Security/Simple.md) credential passing is supported by default; this is the winning spec and superceeds Basic.
+3) Access control rules that specifies which operations must be authenticated before being granted access to the server. 
+4) Setup and request oriented operations must be authenticated (via Simple or Basic means)
 
-*** Explain what this does to our application at startup. How it can be customized, and where users will turn to in order to bring in things like JWT.
+> **_Request Vs Setup:_** Spring Security defines any `request` operation one of the following; FIRE_AND_FORGET, REQUEST_RESPONSE, REQUEST_STREAM, REQUEST_CHANNEL and METADATA_PUSH. SETUP and PAYLOAD types are considered `setup` operations.
 
-### Resolving users at method sites
+### Resolving users and grants
+
 
 *** How do users make it to our method calls? 
 Add AuthenticationPrincipalArgumentResolver to MessageHandler to resolve UserDetails at secure methods.

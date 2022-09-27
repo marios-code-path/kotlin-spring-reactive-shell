@@ -38,7 +38,7 @@ class RequesterTests {
     @Test
     fun `incorrect password request gets Invalid Credentials`(@Autowired requesterFactory: RequesterFactory) {
         val request = requesterFactory
-                .requester("plumber", "nopassword")
+                .requester("plumber", "wrongpassword")
                 .route("shake")
                 .retrieveMono<String>()
 
@@ -49,7 +49,7 @@ class RequesterTests {
 
     @Test
     fun `authenticated request for shake`(@Autowired requesterFactory: RequesterFactory) {
-        val request = requesterFactory.requester("plumber", "supermario")
+        val request = requesterFactory.requester("plumber", "superuser")
                 .route("shake")
                 .retrieveMono<String>()
 

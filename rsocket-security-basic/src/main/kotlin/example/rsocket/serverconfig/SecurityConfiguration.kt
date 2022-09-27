@@ -16,7 +16,7 @@ open class SecurityConfiguration {
             MapReactiveUserDetailsService(
                     User.builder()
                             .username("plumber")
-                            .password("{noop}supermario")
+                            .password("{noop}nopassword")
                             .roles("SHAKE")
                             .build(),
                     User.builder()
@@ -31,7 +31,8 @@ open class SecurityConfiguration {
             : PayloadSocketAcceptorInterceptor = security
             .authorizePayload { spec ->
                 spec
-                        .anyExchange()
+                        .setup().hasRole("ADMIN")
+                        .anyRequest()
                         .authenticated()
             }
             .simpleAuthentication(Customizer.withDefaults())
