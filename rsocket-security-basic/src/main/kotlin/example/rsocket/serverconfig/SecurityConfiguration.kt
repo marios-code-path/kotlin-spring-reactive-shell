@@ -22,19 +22,19 @@ open class SecurityConfiguration {
                     User.builder()
                             .username("gardner")
                             .password("{noop}superuser")
-                            .roles("RAKE")
+                            .roles("RAKE", "LOGIN")
                             .build()
             )
 
     @Bean
     open fun simpleSecurityAuthentication(security: RSocketSecurity)
             : PayloadSocketAcceptorInterceptor = security
+            .simpleAuthentication(Customizer.withDefaults())
             .authorizePayload { spec ->
                 spec
                         .setup().hasRole("ADMIN")
                         .anyRequest()
                         .authenticated()
             }
-            .simpleAuthentication(Customizer.withDefaults())
             .build()
 }

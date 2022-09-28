@@ -58,14 +58,14 @@ Secondly, enabling security on our methods in another concern. Since we can alre
 
 ### Configure RSocket Security 
 
-Spring Security applies RSocket security through [RSocket Interceptors](). Interceptors have the ability to work during, before or after a scope in processing. For RSocket, this means any of the following levels:
+With `@EnableRSocketSecurity`, we gain Spring Security applies RSocket security through [RSocket Interceptors](). Interceptors have the ability to work during, before or after a scope in processing. For RSocket, this means any of the following levels:
 
 * Transport level
 * At the level of accepting new connections
 * Performing requests
 * Responding to requests
 
-Spring's [RSocketSecurity]() bean provides a nice DSL for configuring Simple, Basic, JWT, and custom authentication methods at these level, in addition to application-specific RBAC settings. This behavior works through a series of [PayloadExchangeMatchers]() within our Interceptor. It enables the enforcement of granular security concerns at the boundaries of each exchange. 
+Since a payload can have many metadata formats to confer credential exchange, Spring's [RSocketSecurity]() bean provides a fluent DSL for configuring Simple, Basic, JWT, and custom authentication methods at these level, in addition to application-specific RBAC settings. This DSL ultimately describe a set of [AuthenticationPayloadInterceptor]()'s that converts payload metdata into an [Authentication]() instances at runtime.
 
 Lets look at the [SecuritySocketAcceptorInterceptorConfiguration]() class that sets up default security configuration which we will need for this demo. This class, imported by `@EnableRSocketSecurty`, will configure a [PayloadSocketAcceptorInterceptor]() using RSocketSecurity's DSL:
 
@@ -79,72 +79,94 @@ class SecuritySocketAcceptorInterceptorConfiguration {
 			.simpleAuthentication(Customizer.withDefaults())    // 2
 			.authorizePayload((authz) -> authz                  // 3
 				.setup().authenticated()                        // 4
-				.anyRequest().authenticated()                   
-				.matcher((e) -> MatchResult.match()).permitAll()
+				.anyRequest().authenticated()                   // 5
+				.matcher((e) -> MatchResult.match()).permitAll() // 6
 			);
     //...
 }
 ```
+
 The `authorizePayload` method decides how we can access the server, and thus is something you will want to customize. The operations we see configure above include:
 
 1) Basic credential passing for backwards compatability; for a time, before Simple was accepted as the leading spec.
 2) [Simple](https://github.com/rsocket/rsocket/blob/master/Extensions/Security/Simple.md) credential passing is supported by default; this is the winning spec and superceeds Basic.
 3) Access control rules that specifies which operations must be authenticated before being granted access to the server. 
-4) Setup and request oriented operations must be authenticated (via Simple or Basic means)
+4) ensures `setup` operations happen with authentication
+5) Any request operation requires authentication
+6) Any other operation is permitted regardless of authentication
 
 > **_Request Vs Setup:_** Spring Security defines any `request` operation one of the following; FIRE_AND_FORGET, REQUEST_RESPONSE, REQUEST_STREAM, REQUEST_CHANNEL and METADATA_PUSH. SETUP and PAYLOAD types are considered `setup` operations.
 
-### Resolving users and grants
+### Spring Security User()s
 
+Spring Security provides concrete [User]() objects that implement the [UserDetail]() interface. This interface is used internally and shold be subclassed when you have specific needs. The [User.UserBuilder]() object provides a fluent DSL for describing instances of UserDetail.
 
-*** How do users make it to our method calls? 
-Add AuthenticationPrincipalArgumentResolver to MessageHandler to resolve UserDetails at secure methods.
+Spring Security comes with components to handle UserDetail storage. This activity is exposed for Reactive services, through [ReactiveUserDetailsService](). The easiest way to use this is by creating an instance of the in-memory [MapReactiveUserDetailService]() provided out of the box.
 
-### User Stores
-
-The MapReactiveUserDetailsService
-
-
-Our UserDetails contains just the users for this demo:
+The next sample shows the use of these components in action:
 
 ```kotlin
-open class SecurityConfiguration {
-    // ...
     @Bean
     open fun userDetailService(): ReactiveUserDetailsService =
             MapReactiveUserDetailsService(
                     User.builder()
                             .username("plumber")
-                            .password("{noop}supermario")
+                            .password("{noop}nopassword")   // 1
                             .roles("SHAKE")
                             .build(),
                     User.builder()
                             .username("gardner")
                             .password("{noop}superuser")
-                            .roles("RAKE")
+                            .roles("RAKE", "LOGIN")
                             .build()
             )
-}
 ```
 
-If you want a custom version, checkout the `Demo-chat` repository. Usually you would contact a database to provide the users and a secret-store for credentials. That will be covered in another article. But for now lets focus on the simplicity of integrating security into the app.
-### Enable Authorization 
+Sometimes you want to select a specific encryption algorithm when specifying a password programatically such as above. However, this is specified by:
 
-In this guide, we will interact with a defualt [AuthorizationManager]() for simplicity's sake. However, to gain fundamental understanding of Authorization, I encourage you to read the [Spring Docs](https://docs.spring.io/spring-security/reference/servlet/authorization/architecture.html). This documentation is robust and does well in describing exactly how Authorization operates under the hood - especially for situations where you have legacy framework code and want to customize.
+ 1) specify `noop` (plaintext) password encoding using curly braces and the encoding name `{noop}` or otherwise named encryption algorithm. In the background, Spring Security uses an [DelegatingPasswordEncoder]() to determine the proper encoder to use such as pbkdf2, scrypt, sha256, etc...
 
-By default, you will interact with the [AuthorityAuthorizationManager]() which computes authorization based on a . You can interact with this Authorization by specifying SPeL expressions that call this bean's methods. For example:
+### Security in Reactive Streams
+
+With the usage of `@EnableReactiveMethodSecurity` in our main class, we gained the ability to annotate reactive streams with rules for authorization. This means we can use [@PreAuthorize]() to introspect the authenticated user for necessary credentials. There are a variety of built-in expressions that we can use. 
+
+> **_CURRENTLY_**: For custom expressions, Spring Security supports return values of `boolean` and cannot be wrapped in deferred values such as a reactive `Publisher`. As such, the expressions must not block.
+
+Here are built-in expressions supported as defined in [SecurityExpressionOperations]() and described in [the Docs](https://docs.spring.io/spring-security/reference/servlet/authorization/expression-based.html):
+
+| Expression | Description |
+|------------|-------------|
+|hasRole(role: String) | ... |
+|hasAnyRole(vararg roles: String)|	Returns true if the current principal has any of the supplied roles (given as a comma-separated list of strings)|
+|hasAuthority(authority: String)|Returns true if the current principal has the specified authority. For example, `hasAuthority('read')`|
+|hasAnyAuthority(vararg authorities: String)|Returns true if the current principal has any of the supplied authorities (given as a comma-separated list of strings) For example, `hasAnyAuthority('read', 'write')`|
+|principal|	Allows direct access to the principal object representing the current user|
+|authentication|	Allows direct access to the current Authentication object obtained from the SecurityContext|
+|permitAll	|Always evaluates to true|
+|denyAll|	Always evaluates to false|
+|isAnonymous()|	Returns true if the current principal is an anonymous user|
+|isRememberMe()|	Returns true if the current principal is a remember-me user|
+|isAuthenticated()|	Returns true if the user is not anonymous|
+|isFullyAuthenticated()|	Returns true if the user is not an anonymous or a remember-me user|
+|hasPermission(target: Any, permission: Any)| Returns true if the user has access to the provided target for the given permission. For example, `hasPermission(domainObject, 'read')`|
+|hasPermission(targetId: Any, targetType: String, permission: Any)|Returns true if the user has access to the provided target for the given permission. For example, `hasPermission(1, 'com.example.domain.Message', 'read'`)|
+
+To gain fundamental understanding of Authorization, I encourage you to read the [Spring Docs](https://docs.spring.io/spring-security/reference/servlet/authorization/architecture.html). This documentation is robust and does well in describing exactly how Authorization operates under the hood - especially for situations where you have legacy framework code and want to customize.
+
+By default, you will have little interaction with a [ReactiveAuthorizationManager]() or any [AuthorizationManager]()'s which computes authorization where applied. We will simply apply authorization to our service with a well placed `@PreAuthorize` expression.
+
+We can create an interface as configuration for Spring Security annotations on our example streams:
 
 ```kotlin
-@Secured('hasRole("myRole")')
-fun myMethodRequiringRole() = Mono.just("Authorized!")
+interface TreeServiceSecurity : TreeService {
+
+    @PreAuthorize("hasRole('SHAKE')")
+    override fun shakeForLeaf(): Mono<String>
+
+    @PreAuthorize("hasRole('RAKE')")
+    override fun rakeForLeaves(): Flux<String>
+}
 ```
-
-#### ON Multi-user Systems
-
-Two options for securiting requesters:
-
-* Secure the entire session
-* Secure per request
 
 ### Secure the Client
 
