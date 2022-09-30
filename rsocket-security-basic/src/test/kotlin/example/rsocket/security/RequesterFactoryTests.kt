@@ -11,24 +11,25 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.messaging.rsocket.RSocketRequester
 import org.springframework.messaging.rsocket.connectTcpAndAwait
 import org.springframework.messaging.rsocket.retrieveMono
+import org.springframework.security.rsocket.metadata.SimpleAuthenticationEncoder
+import org.springframework.security.rsocket.metadata.UsernamePasswordMetadata
 import org.springframework.test.context.TestPropertySource
 import reactor.test.StepVerifier
 
 @SpringBootTest
 @TestPropertySource(properties = ["spring.shell.interactive.enabled=false"])
-class RequesterTests {
+class RequesterFactoryTests {
 
     @Test
     fun contextLoads() {
     }
 
     @Test
-    fun `unauthenticated request gets ACCESS DENIED`(@Autowired builder: RSocketRequester.Builder) {
-        val requester = builder
-                .connectTcp("localhost", 8199)
-                .block()!!
+    fun `no setup metadata request is REJECTEDSETUP`(@Autowired requesterFactory: RequesterFactory) {
+        val requester = requesterFactory.requester()
 
-        val request = requester.route("shake").retrieveMono<String>()
+        val request = requester
+                .route("status").retrieveMono<String>()
 
         StepVerifier
                 .create(request)
@@ -36,9 +37,23 @@ class RequesterTests {
     }
 
     @Test
-    fun `incorrect password request gets Invalid Credentials`(@Autowired requesterFactory: RequesterFactory) {
+    fun `sends credential metadata in request is REJECTEDSETUP`(@Autowired requesterFactory: RequesterFactory) {
+        val requester = requesterFactory.requester()
+
+        val request = requester
+                .route("status")
+                .metadata(UsernamePasswordMetadata("shaker", "nopassword"), RequesterFactory.SIMPLE_AUTH)
+                .retrieveMono<String>()
+
+        StepVerifier
+                .create(request)
+                .verifyError(RejectedSetupException::class.java)
+    }
+
+    @Test
+    fun `incorrect password request is REJECTEDSETUP Invalid Credentials`(@Autowired requesterFactory: RequesterFactory) {
         val request = requesterFactory
-                .requester("plumber", "wrongpassword")
+                .requester("shaker", "wrongpassword")
                 .route("shake")
                 .retrieveMono<String>()
 
@@ -48,8 +63,9 @@ class RequesterTests {
     }
 
     @Test
-    fun `authenticated request for shake`(@Autowired requesterFactory: RequesterFactory) {
-        val request = requesterFactory.requester("plumber", "superuser")
+    fun `authenticated request for shake is resolved`(@Autowired requesterFactory: RequesterFactory) {
+        val request = requesterFactory
+                .requester("shaker", "nopassword")
                 .route("shake")
                 .retrieveMono<String>()
 
@@ -58,15 +74,15 @@ class RequesterTests {
                 .assertNext {
                     Assertions
                             .assertThat(it)
-                            .isNotNull()
+                            .isNotNull
                             .containsAnyOf(*TreeService.LEAF_COLORS.toTypedArray())
                 }
                 .verifyComplete()
     }
 
     @Test
-    fun `unprivileged access to request for shake`(@Autowired requesterFactory: RequesterFactory) {
-        val request = requesterFactory.requester("gardner", "superuser")
+    fun `underprivileged shake request is APPLICATIONERROR Denied`(@Autowired requesterFactory: RequesterFactory) {
+        val request = requesterFactory.requester("raker", "nopassword")
                 .route("shake")
                 .retrieveMono<String>()
 

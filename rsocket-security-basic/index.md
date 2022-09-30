@@ -58,7 +58,7 @@ Secondly, enabling security on our methods in another concern. Since we can alre
 
 ### Configure RSocket Security 
 
-With `@EnableRSocketSecurity`, we gain Spring Security applies RSocket security through [RSocket Interceptors](). Interceptors have the ability to work during, before or after a scope in processing. For RSocket, this means any of the following levels:
+With `@EnableRSocketSecurity`, we gain RSocket security through [RSocket Interceptors](). Interceptors have the ability to work during, before or after a scope in processing. For RSocket, this means any of the following levels:
 
 * Transport level
 * At the level of accepting new connections

@@ -12,10 +12,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.messaging.rsocket.RSocketRequester
+import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity
 import org.springframework.security.config.annotation.rsocket.EnableRSocketSecurity
 import org.springframework.stereotype.Controller
+import reactor.core.publisher.Mono
 
 @EnableReactiveMethodSecurity
 @EnableRSocketSecurity
@@ -27,15 +28,17 @@ class App {
 
     @Controller
     class ServerTreeController : TreeControllerMapping,
-            TreeServiceSecurity, TreeService by TreeServiceImpl()
+            TreeServiceSecurity, TreeService by TreeServiceImpl() {
+        @MessageMapping("status")
+        fun status(): Mono<Boolean> = Mono.just(true)
+    }
 
     @Bean
     fun messageHandlerCustomizerBean() = SecurityMessageHandlerCustomizer()
 
     @Bean
-    fun requesterFactoryBean(@Value("\${spring.rsocket.server.port}") port: String,
-                             builder: RSocketRequester.Builder
-    ): RequesterFactory = RequesterFactory(port, builder)
+    fun requesterFactoryBean(@Value("\${spring.rsocket.server.port}") port: String): RequesterFactory =
+            RequesterFactory(port)
 
     companion object {
         @JvmStatic

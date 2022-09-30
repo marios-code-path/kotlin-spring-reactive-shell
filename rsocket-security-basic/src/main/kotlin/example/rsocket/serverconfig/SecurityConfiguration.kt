@@ -15,26 +15,26 @@ open class SecurityConfiguration {
     open fun userDetailService(): ReactiveUserDetailsService =
             MapReactiveUserDetailsService(
                     User.builder()
-                            .username("plumber")
+                            .username("shaker")
                             .password("{noop}nopassword")
                             .roles("SHAKE")
                             .build(),
                     User.builder()
-                            .username("gardner")
-                            .password("{noop}superuser")
+                            .username("raker")
+                            .password("{noop}nopassword")
                             .roles("RAKE", "LOGIN")
                             .build()
             )
 
     @Bean
+    @Profile("LOGINONLY")
     open fun simpleSecurityAuthentication(security: RSocketSecurity)
             : PayloadSocketAcceptorInterceptor = security
             .simpleAuthentication(Customizer.withDefaults())
-            .authorizePayload { spec ->
-                spec
-                        .setup().hasRole("ADMIN")
-                        .anyRequest()
-                        .authenticated()
+            .authorizePayload { authorize ->
+                authorize
+                        .setup().authenticated()
+                        .anyRequest().authenticated()
             }
             .build()
 }
