@@ -153,7 +153,10 @@ Here are built-in expressions supported as defined in [SecurityExpressionOperati
 
 To gain fundamental understanding of Authorization, I encourage you to read the [Spring Docs](https://docs.spring.io/spring-security/reference/servlet/authorization/architecture.html). This documentation is robust and does well in describing exactly how Authorization operates under the hood - especially for situations where you have legacy framework code and want to customize.
 
-By default, you will have little interaction with a [ReactiveAuthorizationManager]() or any [AuthorizationManager]()'s which computes authorization where applied. We will simply apply authorization to our service with a well placed `@PreAuthorize` expression.
+By default, you will have little interaction with a [ReactiveAuthorizationManager]() or any [AuthorizationManager]()'s which computes authorization where applied.  To use Authorization with Reactive streams, use [@PreAuthorize]() annotations that let us express authorization requiremts.
+
+
+We will simply apply authorization to our service with a well placed `@PreAuthorize` expression.
 
 We can create an interface as configuration for Spring Security annotations on our example streams:
 
@@ -167,16 +170,23 @@ interface TreeServiceSecurity : TreeService {
     override fun rakeForLeaves(): Flux<String>
 }
 ```
+Secure the services with what level of authorization your application requires. In the above example,
+we use [@PreAuthorize]().
+## Secure the Client
 
-### Secure the Client
+Spring RSocket creates a [RSocketRequesterBuilder]() bean at startup. This bean provides a builder for creating new [RSocketRequesters](). An `RSocketRequester` provides a single connection interface to RSocket operations usually across a network.
+
+RSocket Security can be applied to connection level or request level. It is up to how your application uses the connection. If a connection is shared across multiple [Principal]() (Users) then it is recommended to authenticate the setup with it's own 'connectivity' user, or to connect normally, and secure each request. We will discuss both methods below.  
+
+### Securing at connection time
+
+The first strategy is to issue authentication details upon connection setup. This lets the server know who is making the connection, so it has a chance to veto the connection. This example will make use of 'authenticated' connections.
+
 
 * RSocketConnectionHandler
 * RSocketRequester
 * RequesterFactory
 
-## Secure the Connection with TLS (SSL v3)
-
-Because we're using BASIC_AUTH ( SimpleAuthentication ) which sends credentials in plain text, we need to ensure that transport is secure. Lets configure TLS for our connection.
 ## Summary
 
 ## Next Steps
@@ -187,7 +197,7 @@ Ben Wilcock's [Getting Started to RSocket Security](https://spring.io/blog/2020/
 
 [Going coroutine with Reactive Spring Boot](https://spring.io/blog/2019/04/12/going-reactive-with-spring-coroutines-and-kotlin-flow)
 
-[Spring Security Reference](https://docs.spring.io/spring-security/site/docs/5.0.0.RELEASE/reference/htmlsingle/#jc-erms)
+[Spring Security Reference](https://docs.spring.io/spring-security/reference/)
 
 [Spring Shell Reference](https://docs.spring.io/spring-shell/docs/2.1.0/site/reference/htmlsingle/#_what_is_spring_shell)
 
