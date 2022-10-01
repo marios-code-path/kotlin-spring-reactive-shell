@@ -253,8 +253,6 @@ class RequesterFactoryTests {
 3) The test site is simple and merely sends a request to the `status` route that returns whether we are authenticated or not.
 4) Because our server configuration states that setup must be authenticated, we should expect a [RejectedSetupExeption] error upon request.
 
-* RSocketConnectionHandler
-
 ## Summary
 
 ## Next Steps
