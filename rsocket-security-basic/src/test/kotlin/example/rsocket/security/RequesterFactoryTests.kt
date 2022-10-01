@@ -17,7 +17,6 @@ import org.springframework.test.context.TestPropertySource
 import reactor.test.StepVerifier
 
 @SpringBootTest
-@TestPropertySource(properties = ["spring.shell.interactive.enabled=false"])
 class RequesterFactoryTests {
 
     @Test

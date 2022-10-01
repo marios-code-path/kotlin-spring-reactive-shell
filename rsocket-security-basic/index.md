@@ -180,12 +180,80 @@ RSocket Security can be applied to connection level or request level. It is up t
 
 ### Securing at connection time
 
-The first strategy is to issue authentication details upon connection setup. This lets the server know who is making the connection, so it has a chance to veto the connection. This example will make use of 'authenticated' connections.
+We can secure each connection by sending metadata in the SETUP frame. To configure this kind of authentication, use a [RSocketRequester.Builder]() builder. This builder lets us specify `setupMetadata`
+to enable our setup frame to contain our user credentials.
 
+A RequestFactory class that does this job can be made so we dont repeat the connection builder every time a requester is needed. We will create the authenticating Requester below:
+
+```kotlin
+open class RequesterFactory(private val port: String) {
+        companion object {
+        val SIMPLE_AUTH = MimeTypeUtils.parseMimeType(WellKnownMimeType.MESSAGE_RSOCKET_AUTHENTICATION.string) // 1
+    }
+    open fun authenticatedRequester(username: String, password: String): RSocketRequester =
+            RSocketRequester
+                    .builder()
+                    .rsocketStrategies { strategiesBuilder ->
+                        strategiesBuilder.encoder(SimpleAuthenticationEncoder())
+                    } // 2
+                    .setupMetadata(UsernamePasswordMetadata(username, password), SIMPLE_AUTH) //3
+                    .connectTcp("localhost", port.toInt())
+                    .block()!!
+ //..
+}    
+```
+The lines of code we want to inspect here relate to the specifics for setup frame authentication metadata:
+
+1) Requester needs to know how to encode our `SIMPLE` v0 authentication metadata
+2) Which needs to be registered as an encoder in Spring's [RSocketStrategies]()
+3) Provide the credentials going into setup with the `setupMetdata` method on supported `RSocketbuilder.Builder`s
+
+Additionally, we may not want to secure the SETUP portion. Lets create a method that returns a authentication-less requester.
+
+```kotlin
+    open fun requester(): RSocketRequester =
+            RSocketRequester
+                    .builder()
+                    .rsocketStrategies { strategiesBuilder ->
+                        strategiesBuilder.encoder(SimpleAuthenticationEncoder())
+                    }
+                    .connectTcp("localhost", port.toInt())
+                    .block()!!
+```
+
+We need to keep the strategy encoder for `Simple` authentication so that we can still send authenticated requests at request time. Other than that, nothing else is different.
+
+Next, we can create some tests to demonstrate connectivity and test whether our configuration is valid.
+
+### Testing the client and server
+
+The first thing we want to is test whether authenticated connections are truely secure by ensuring proper rejection of non setup metadata laden requests.  This demo inclues a test class called `RequesterFactoryTests` which emposases any `RequesterFactory` as the factory of `RSocketRequester`.
+
+Lets take a look at how we configure and test the first case where the setup goes authenticated:
+
+```kotlin
+@SpringBootTest         // 1
+class RequesterFactoryTests {
+    @Test
+    fun `no setup metadata request is REJECTEDSETUP`(@Autowired requesterFactory: RequesterFactory) {
+        val requester = requesterFactory.requester()    // 2
+
+        val request = requester
+                .route("status").retrieveMono<String>() // 3
+
+        StepVerifier
+                .create(request)
+                .verifyError(RejectedSetupException::class.java)  //4
+    }
+
+```
+
+1) Using `@SpringBootTest` ensures we get full autowiring of our production code to setup the server
+2) Issue a requester that omits setup authentication metadata.
+3) The test site is simple and merely sends a request to the `status` route that returns whether we are authenticated or not.
+4) Because our server configuration states that setup must be authenticated, we should expect a [RejectedSetupExeption] error upon request.
 
 * RSocketConnectionHandler
-* RSocketRequester
-* RequesterFactory
 
 ## Summary
 
