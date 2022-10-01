@@ -41,9 +41,54 @@ This guide assumes RBAC as the choice strategy for authorization.
 
 ## Application Setup - Enabling Security
 
-The [Example app](https://start.spring.io/#!type=maven-project&language=kotlin&platformVersion=2.7.3&packaging=jar&jvmVersion=17&groupId=example&artifactId=rsocket-security&name=rsocket-security&description=Reactive%20RSocket%20Security%20Demo&packageName=example.rsocket.security&dependencies=rsocket,security,spring-shell) is a simple service that sends [Strings](). Two roles required to either 'shake' a tree or 'rake' for leaves. We will create users that hold ONE of these roles, stand up a service and then attach our shell app to let us login and perform 'shake' and 'rake'.
+The [Example app](https://start.spring.io/#!type=maven-project&language=kotlin&platformVersion=2.7.3&packaging=jar&jvmVersion=17&groupId=example&artifactId=rsocket-security&name=rsocket-security&description=Reactive%20RSocket%20Security%20Demo&packageName=example.rsocket.security&dependencies=rsocket,security,spring-shell) is a simple service containing 2 methods for sending String representation of leaf colors. 
 
-The first thing to do in securing an RSocket app is to enable security specific to RSocket itself, the [RSocketSecurity]() bean. This is done by declaring @[EnableRSocketSecurity]() onto the main configuraiton class. What this does as stated - allows configuring RSocket based security. 
+The Service interface is as follows:
+
+```kotlin
+interface TreeService {
+    fun shakeForLeaf(): Mono<String> // 1
+    fun rakeForLeaves(): Flux<String> // 2
+
+    companion object {
+        val LEAF_COLORS = listOf("Green", "Yellow", "Orange", "Brown", "Red") // 3
+    }
+}
+```
+
+We have 2 functions and a static list that 
+1) returns a Mono of leaf colors.
+2) returns a Flux of leaf colors.
+3) The list of leaf colors.
+
+We can implement this by doing the actual work for return our Mono/Flux streams of Strings:
+
+```kotlin
+class TreeServiceImpl : TreeService {
+
+    override fun shakeForLeaf(): Mono<String> = Mono.just(LEAF_COLORS.get(Random.nextInt(LEAF_COLORS.size)))
+
+    override fun rakeForLeaves(): Flux<String> = Flux
+            .fromStream(
+                    Stream.generate { Random.nextInt(LEAF_COLORS.size) }
+                            .limit(10)
+            ).map { LEAF_COLORS[it] }
+}
+```
+
+And add another interface for RSocket Controller mappings:
+
+```kotlin
+interface TreeControllerMapping : TreeService {
+    @MessageMapping("shake")
+    override fun shakeForLeaf(): Mono<String>
+
+    @MessageMapping("rake")
+    override fun rakeForLeaves(): Flux<String>
+}
+```
+
+The first thing to do in securing an RSocket app is to enable security specific to RSocket itself, the [RSocketSecurity]() bean. This is done by declaring @[EnableRSocketSecurity]() onto the main configuration class. What this does as stated - allows configuring RSocket based security. 
 
 ```kotlin
 @EnableReactiveMethodSecurity
@@ -54,7 +99,7 @@ class App {
 }
 ```
 
-Secondly, enabling security on our methods in another concern. Since we can already tell when the RSocket connection is processing security details.  Thus, to enable the usage of JSR-250 and Spring's own method security annotations, add the @[EnableReactiveMethodSecurity]() annotation to the main configuraiton class.
+Secondly, enabling security on our methods in another concern.  Thus, to enable the usage of JSR-250 and Spring's own method security annotations, add the @[EnableReactiveMethodSecurity]() annotation to the main configuraiton class. This method configures Reactive Publishers to inspect a [SecurityContext]() object on the reactive pipeline, thus allowing pre-access and post-access rules to lock down a stream.
 
 ### Configure RSocket Security 
 
@@ -227,9 +272,9 @@ Next, we can create some tests to demonstrate connectivity and test whether our 
 
 ### Testing the client and server
 
-The first thing we want to is test whether authenticated connections are truely secure by ensuring proper rejection of non setup metadata laden requests.  This demo inclues a test class called `RequesterFactoryTests` which emposases any `RequesterFactory` as the factory of `RSocketRequester`.
+The first thing we want to is test whether authenticated connections are truely secure by ensuring proper rejection of non setup metadata laden requests.  This demo inclues a test class called `RequesterFactoryTests` because we're testing  `RequesterFactory` as the factory of `RSocketRequester`.
 
-Lets take a look at how we configure and test the first case where the setup goes authenticated:
+Lets take a look at how we configure and test the first case where the setup is NOT authenticated:
 
 ```kotlin
 @SpringBootTest         // 1
@@ -247,11 +292,59 @@ class RequesterFactoryTests {
     }
 
 ```
+Whats happening is a usual test setup, but lets inspect what our test means.
 
-1) Using `@SpringBootTest` ensures we get full autowiring of our production code to setup the server
+1) Using `@SpringBootTest` ensures we get full autowiring of our production code to setup the server.
 2) Issue a requester that omits setup authentication metadata.
 3) The test site is simple and merely sends a request to the `status` route that returns whether we are authenticated or not.
 4) Because our server configuration states that setup must be authenticated, we should expect a [RejectedSetupExeption] error upon request.
+
+Next, we will test when we send authenticated requests without autheticating setup:
+
+```kotlin
+    @Test
+    fun `sends credential metadata in request is REJECTEDSETUP`(@Autowired requesterFactory: RequesterFactory) {
+        val requester = requesterFactory.requester()
+
+        val request = requester
+                .route("status")
+                .metadata(UsernamePasswordMetadata("shaker", "nopassword"), RequesterFactory.SIMPLE_AUTH) // 1
+                .retrieveMono<String>()
+
+        StepVerifier
+                .create(request)
+                .verifyError(RejectedSetupException::class.java)    // 2
+    }
+```
+
+This test case is very similar to the previous one with one exception:
+
+1) We only added the metadata line that tells `RSocketRequester` to send authentication metadata along with the request. 
+2) This wont work, and will result with RejectedSetupException since our server expects authentication in the SETUP payload.
+
+### Authorization in tests
+
+Next, we will test for proper setup authentication and that roles are truely locked down on our server routes. Recall earlier we have a [TreeServiceSecurity]() class that adds `@PreAuthorize` to our service methods. Lets 
+make a request without having sufficient privileges:
+
+```kotlin
+    @Test
+    fun `underprivileged shake request is APPLICATIONERROR Denied`(@Autowired requesterFactory: RequesterFactory) {
+        val request = requesterFactory.requester("raker", "nopassword") //1
+                .route("shake")  // 2
+                .retrieveMono<String>()
+
+        StepVerifier
+                .create(request)
+                .verifyError(ApplicationErrorException::class.java) //3
+    }
+```
+
+This test issues a requester with authentication setup payloads, so the factory method includes username and password. Dont do this in production. It's better to use a secrets store or otherwise safe credential holder.
+
+1) issues the authenticated requester, this user is the 'raker' user and does not have 'shake' authority.
+2) sends a request to the 'shake' route. This route is @PreAuthorized protected for users having 'shake' authority.
+3) Since we dont have this kind of role for the 'raker' user, we will get [ApplicationErrorException]() with the message 'Denied'.
 
 ## Summary
 
