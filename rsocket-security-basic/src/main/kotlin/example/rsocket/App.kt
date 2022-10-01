@@ -15,6 +15,8 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity
 import org.springframework.security.config.annotation.rsocket.EnableRSocketSecurity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.stereotype.Controller
 import reactor.core.publisher.Mono
 
@@ -30,7 +32,9 @@ class App {
     class ServerTreeController : TreeControllerMapping,
             TreeServiceSecurity, TreeService by TreeServiceImpl() {
         @MessageMapping("status")
-        fun status(): Mono<Boolean> = Mono.just(true)
+        fun status(@AuthenticationPrincipal user: Mono<UserDetails>): Mono<String> =
+                user.hasElement().map (Boolean::toString)
+
     }
 
     @Bean

@@ -80,6 +80,24 @@ class RequesterFactoryTests {
     }
 
     @Test
+    fun `authenticated request for status is resolved`(@Autowired requesterFactory: RequesterFactory) {
+        val request = requesterFactory
+                .requester("shaker", "nopassword")
+                .route("status")
+                .retrieveMono<String>()
+
+        StepVerifier
+                .create(request)
+                .assertNext {
+                    Assertions
+                            .assertThat(it)
+                            .isNotNull
+                            .isEqualTo(true.toString())
+                }
+                .verifyComplete()
+    }
+
+    @Test
     fun `underprivileged shake request is APPLICATIONERROR Denied`(@Autowired requesterFactory: RequesterFactory) {
         val request = requesterFactory.requester("raker", "nopassword")
                 .route("shake")

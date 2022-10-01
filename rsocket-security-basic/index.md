@@ -39,9 +39,9 @@ Authorization (access control) is the process which lets your application determ
 
 This guide assumes RBAC as the choice strategy for authorization.
 
-## Application Setup - Enabling Security
+## The Application
 
-The [Example app](https://start.spring.io/#!type=maven-project&language=kotlin&platformVersion=2.7.3&packaging=jar&jvmVersion=17&groupId=example&artifactId=rsocket-security&name=rsocket-security&description=Reactive%20RSocket%20Security%20Demo&packageName=example.rsocket.security&dependencies=rsocket,security,spring-shell) is a simple service containing 2 methods for sending String representation of leaf colors. 
+The [Example app](https://start.spring.io/#!type=maven-project&language=kotlin&platformVersion=2.7.3&packaging=jar&jvmVersion=17&groupId=example&artifactId=rsocket-security&name=rsocket-security&description=Reactive%20RSocket%20Security%20Demo&packageName=example.rsocket.security&dependencies=rsocket,security,spring-shell) is a simple service containing 2 methods for sending streams of Strings.
 
 The Service interface is as follows:
 
@@ -88,18 +88,54 @@ interface TreeControllerMapping : TreeService {
 }
 ```
 
-The first thing to do in securing an RSocket app is to enable security specific to RSocket itself, the [RSocketSecurity]() bean. This is done by declaring @[EnableRSocketSecurity]() onto the main configuration class. What this does as stated - allows configuring RSocket based security. 
+We will simply apply authorization to our service with a well placed `@PreAuthorize` expression. We can create an interface as configuration for Spring Security annotations on our example service:
 
 ```kotlin
-@EnableReactiveMethodSecurity
-@EnableRSocketSecurity
+interface TreeServiceSecurity : TreeService {
+
+    @PreAuthorize("hasRole('SHAKE')")
+    override fun shakeForLeaf(): Mono<String>
+
+    @PreAuthorize("hasRole('RAKE')")
+    override fun rakeForLeaves(): Flux<String>
+}
+```
+Secure the services with what level of authorization your application requires. In the above example,
+we use [@PreAuthorize]() which is the method for securing reactive streams through annotation.
+
+### Putting the App together
+
+The production appliation will configure security rules, build the exposed services, and provide other support beans that we will discuss later on. In the next listing, we will look at security related annotations and our service configuration. The rest will be discussed as we move on.
+
+```kotlin
+@EnableReactiveMethodSecurity  // 1
+@EnableRSocketSecurity // 2
 @SpringBootApplication
-class App { 
-    // ...
+class App {
+
+ // ...
+
+    @Controller
+    class ServerTreeController : TreeControllerMapping,
+            TreeServiceSecurity, TreeService by TreeServiceImpl() {  // 3
+        @MessageMapping("status")
+        fun status(): Mono<Boolean> = Mono.just(true)
+    }
+
+// ...
+
+    companion object {
+        @JvmStatic
+        fun main(args: Array<String>) {
+            runApplication<App>(*args)
+        }
+    }
 }
 ```
 
-Secondly, enabling security on our methods in another concern.  Thus, to enable the usage of JSR-250 and Spring's own method security annotations, add the @[EnableReactiveMethodSecurity]() annotation to the main configuraiton class. This method configures Reactive Publishers to inspect a [SecurityContext]() object on the reactive pipeline, thus allowing pre-access and post-access rules to lock down a stream.
+1) The first thing to do in securing an RSocket app is to enable security specific to RSocket itself, the [RSocketSecurity]() bean. This is done by declaring @[EnableRSocketSecurity]() onto the main configuration class. What this does is as stated in documentation -  it allows configuring RSocket based security. 
+2) Secondly, enabling security on our streams in service methods is another concern.  Thus, to enable the usage of Spring's own method security annotations, add the @[EnableReactiveMethodSecurity]() annotation to the main configuraiton class. At a deper level, this configures Reactive Publishers Hooks to decorate our streams with pre and post advices that access [SecurityContext]() object. 
+3) The controller is fully configured here, along with an un-secure `status` route. The status route should only tell us that we are authenticated by returning a boolean.
 
 ### Configure RSocket Security 
 
@@ -200,23 +236,6 @@ To gain fundamental understanding of Authorization, I encourage you to read the 
 
 By default, you will have little interaction with a [ReactiveAuthorizationManager]() or any [AuthorizationManager]()'s which computes authorization where applied.  To use Authorization with Reactive streams, use [@PreAuthorize]() annotations that let us express authorization requiremts.
 
-
-We will simply apply authorization to our service with a well placed `@PreAuthorize` expression.
-
-We can create an interface as configuration for Spring Security annotations on our example streams:
-
-```kotlin
-interface TreeServiceSecurity : TreeService {
-
-    @PreAuthorize("hasRole('SHAKE')")
-    override fun shakeForLeaf(): Mono<String>
-
-    @PreAuthorize("hasRole('RAKE')")
-    override fun rakeForLeaves(): Flux<String>
-}
-```
-Secure the services with what level of authorization your application requires. In the above example,
-we use [@PreAuthorize]().
 ## Secure the Client
 
 Spring RSocket creates a [RSocketRequesterBuilder]() bean at startup. This bean provides a builder for creating new [RSocketRequesters](). An `RSocketRequester` provides a single connection interface to RSocket operations usually across a network.
