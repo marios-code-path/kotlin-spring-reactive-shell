@@ -25,17 +25,17 @@ level2: Frameworks and Languages
 
 This guide will discuss RSocket service security with Spring Boot, by way of Spring Security. We will surface RSocket routes that enforce specific security measures and describe what this means internally. This guide will inform you of the additional configuration options provided when configuring for Spring Security on a Spring Boot 2.7.x/RSocket application.
 
-It is assumed the developer knows Kotlin, uses Spring Boot, and has an understanding of the [Reactive Streams](). If you're new to Spring Security for Reactive streams, then this guide should help shed light on the subject. Of course, the best place to understand are [The Guides](), please read them!
+It is assumed the developer knows Kotlin, uses Spring Boot, and has an understanding of the [Reactive Streams](). If you're new to Spring Security for Reactive streams, then this guide should help shed light on the subject. Of course, the best place to understand are [The Guides](), so please read them!
 
 ## Motivation
 
-Writing secure RSocket apps with Spring Boot application is not hard and takes just a few lines of code.But you may now already know that security is a broad and widely discussed topic. This example is designed to help you to quickly understand the basics of integrating Spring Security into your Reactive / RSocket application. We will cover the authentication and authorization aspects and how they are applied within Spring. There are a number of strategies to authenticate with such as JWT, Kerberos, and Password to name a few. This guide will focus on the `simple` strategy.
+Writing secure RSocket apps with Spring Boot application is not hard and takes just a few lines of code. But you may now already know that security is a broad and widely discussed topic. This example is designed to help you to quickly understand the basics of integrating Spring Security into your Reactive / RSocket application. We will cover the authentication and authorization aspects and how they are applied within Spring. There are a number of strategies to authenticate with such as JWT, Kerberos, and Password to name a few. This guide will focus on the `simple` strategy.
 
 We want our applications to respond to a user's privilege level; as multi-user applications tend to be specific with regards to feature availability. What emerges through Spring Security, is Role Based Access Control - the ability to make privilege specific logic feasable and with minimal boilerplate.
 
 ### Authorization vs Authentication
 
-Authentication is the process which lets our apps identify a user. Authentication schemes are methods which describe a secure process of identification. Some simple ones are username/password, while currently OAuth (token based) is all the rage.
+Authentication is the process which lets our apps identify a user. Authentication schemes are methods which describe a secure process of identification. Some simple ones are username/password, while currently OAuth and 2-n-factor are all the rage.
 
 Authorization (access control) is the process which lets your application determine how access is granted to users (also known as the principal). This begins to sound straight forward, but can be surfaced in our application in a number of ways. One such way is Role Based Access Control - in which a user may have granted privileges given by role 'names' - e.g. 'WRITE', 'READ' for a given resource. Additionally, RBAC relies on the application to make these decisions (as governed through @PreAuthorize and @Secured annotations).
 
@@ -43,7 +43,7 @@ This guide assumes RBAC as the choice strategy for authorization, and is the def
 
 ## The Application
 
-The [Example app](https://start.spring.io/#!type=maven-project&language=kotlin&platformVersion=2.7.3&packaging=jar&jvmVersion=17&groupId=example&artifactId=rsocket-security&name=rsocket-security&description=Reactive%20RSocket%20Security%20Demo&packageName=example.rsocket.security&dependencies=rsocket,security,spring-shell) is a simple service containing 2 methods for sending streams of Strings.
+The [Example app](https://start.spring.io/#!type=maven-project&language=kotlin&platformVersion=2.7.3&packaging=jar&jvmVersion=17&groupId=example&artifactId=rsocket-security&name=rsocket-security&description=Reactive%20RSocket%20Security%20Demo&packageName=example.rsocket.security&dependencies=rsocket,security,spring-shell) is a service containing 2 methods for sending streams of Strings.
 
 The Service interface is as follows:
 
@@ -58,10 +58,11 @@ interface TreeService {
 }
 ```
 
-We have 2 functions and a static list that 
-1) returns a Mono of leaf colors.
-2) returns a Flux of leaf colors.
-3) Representing supported leaf colors.
+We have 2 functions and a static list that:
+
+1) Return a `Mono<String>` of leaf colors.
+2) Return a `Flux<String>` of leaf colors.
+3) List of Strings for supported leaf colors.
 
 We can then implement this Mono/Flux streams of Strings:
 
@@ -90,7 +91,7 @@ interface TreeControllerMapping : TreeService {
 }
 ```
 
-Next, another subclass that applies Spring Security annotations. Securing the services with what level of authorization our application requires. Use [@PreAuthorize](), which is the preferred way for securing reactive streams through annotation.
+Next, another subclass that applies Spring Security annotations. Securing the services with what level of authorization our application requires. Use [@PreAuthorize](https://docs.spring.io/spring-security/reference/5.6.8/servlet/authorization/expression-based.html#_access_control_using_preauthorize_and_postauthorize), which is the preferred way for securing reactive streams through annotation.
 
 ```kotlin
 interface TreeServiceSecurity : TreeService {
@@ -107,7 +108,7 @@ Finally, we can put the whole thing together and expose it as an RSocket service
 
 ### Putting the App together
 
-The production application will configure security rules, create the exposed services, and provide other support beans that we will discuss later on. In the next listing, we will look at enabling Spring Security for our service configuration.
+The production application will configure security rules, create the exposed services, and provide other support beans that we will discuss later on. In the next listing, we will look at enabling Spring Security for RSocket.
 
 ```kotlin
 @EnableReactiveMethodSecurity  // 1
@@ -135,8 +136,12 @@ class App {
 }
 ```
 
-1) The first thing to do in securing an RSocket app is to enable security specific to RSocket itself, the [RSocketSecurity]() bean. This is enabled by decorating @[EnableRSocketSecurity]() onto the main configuration class. What this does is as stated in documentation -  it allows configuring RSocket based security. 
-2) To enable the usage of Spring's own method security annotations on Reactive Streams, add the @[EnableReactiveMethodSecurity]() annotation to the main configuraiton class. At a deper level, this configures Reactive Publishers Hooks to decorate our streams with pre and post advices that access [SecurityContext]() object. 
+To do much of the Reactive Security work, Spring Security uses a [ReactiveSecurityContextHolder](https://docs.spring.io/spring-security/site/docs/current/api/org/springframework/security/core/context/ReactiveSecurityContextHolder.html) to place the [SecurityContext](https://docs.spring.io/spring-security/site/docs/current/api/org/springframework/security/core/context/SecurityContext.html) into  [Reactor's Context](https://projectreactor.io/docs/core/release/reference/#context).
+
+Since reactive operators now have access to this `SecurityContext`, Spring can wrap logic within advices to determine things like the current logged in user and it's privileges.
+
+1) The [RSocketSecurity](https://github.com/spring-projects/spring-security/blob/main/config/src/main/java/org/springframework/security/config/annotation/rsocket/RSocketSecurity.java) bean is central to security of RSocket endpoints. It is enabled by decorating the main configuration class with [@EnableRSocketSecurity](https://github.com/spring-projects/spring-security/blob/main/config/src/main/java/org/springframework/security/config/annotation/rsocket/EnableRSocketSecurity.java). What this does is as stated in documentation -  it allows configuring RSocket based security. 
+2) To enable the usage of Spring's own method security annotations on Reactive Streams, add the @[EnableReactiveMethodSecurity](https://github.com/spring-projects/spring-security/blob/210693eb6bd0cba51874ce150c73090c95d4e08b/docs/modules/ROOT/pages/reactive/authorization/method.adoc) annotation to the main configuraiton class. At a deper level, this configures Reactive Publishers Hooks to decorate our streams with pre and post advices. 
 3) The controller is fully configured here, along with an added un-secure `status` route. The status uses [@AuthenticationPrincipal]() to tell whether we are really logged in by returning boolean.
 
 ** ReactiveAuthenticationManager paragraph
