@@ -15,7 +15,7 @@ tags:
 - Spring Security
 team:
 - Mario Gray
-title: Implementing Secure and user-aware RSocket services with Spring Boot
+title: Implementing Secure, user-aware RSocket services with Spring Boot
 oldPath: "/content/guides/spring/reactive-rsocket-security-spring-boot-pt1.md"
 aliases:
 - "/guides/spring/reactive-distributed-tracing"
@@ -27,17 +27,19 @@ This guide will discuss RSocket service security with Spring Boot, by way of Spr
 
 ## Motivation
 
-Writing an RSocket application is pretty simple. Securing that app can be simple, but you may now already know there are a few areas to tighen down when it comes to this topic. This example is designed to help you understand where to integrate security in your app. We will cover both authentication and authorization aspects. There are a number of strategies engage Authentication such as JWT, Kerberos, Password and more. This guide will use the simple strategy (username/password) that is configurable out of the box with Spring RSocket services.
+Writing an RSocket with Spring Boot application is not hard and takes just a few lines of code. Securing that app can be simple, but you may now already know that security is a broad and widely discussed topic. This example is designed to help you to quickly understand the basics of integrating Spring Security into your Reactive application. We will cover both authentication and authorization aspects. There are a number of strategies to authenticate with such as JWT, Kerberos, and Password to name a few. This guide will focus on simple conventions for brevity.
 
-It is assumed we want our applications to respond to a user's privilege level; as multi-user applications tend to be specific with regards to feature availability. What emerges through Spring Security, is Role Based Access Control - the ability to make privilege specific logic feasable and with minimal boilerplate.
+We want our applications to respond to a user's privilege level; as multi-user applications tend to be specific with regards to feature availability. What emerges through Spring Security, is Role Based Access Control - the ability to make privilege specific logic feasable and with minimal boilerplate.
+
+It is assumed the developer knows Kotlin, uses Spring Boot, and has an understanding of the [Reactive Streams](). If you're new to Spring Security for Reactive streams, then this guide should help shed light on the subject. Of course, the best place to understand are [The Guides](), please read them!
 
 ### Authorization vs Authentication
 
-Authentication is the process which lets our apps identify a user. Authentication schemes are methods which describe a secure process of identification. Some earlier ones are password, while currently OAuth is all the rage.
+Authentication is the process which lets our apps identify a user. Authentication schemes are methods which describe a secure process of identification. Some simple ones are username/password, while currently OAuth (token based) is all the rage.
 
-Authorization (access control) is the process which lets your application determine what a user has access to. This begins to sound straight forward, but can be surfaced in our application in a number of ways. One such way is Role Based Access Control - in which a user may have granted privileges given by role 'names' - e.g. 'WRITE', 'READ' for a given resource. Additionally, RBAC relies on the application to make these decisions (as governed through @Secured annotations).
+Authorization (access control) is the process which lets your application determine how access is granted to users (also known as the principal). This begins to sound straight forward, but can be surfaced in our application in a number of ways. One such way is Role Based Access Control - in which a user may have granted privileges given by role 'names' - e.g. 'WRITE', 'READ' for a given resource. Additionally, RBAC relies on the application to make these decisions (as governed through @PreAuthorize and @Secured annotations).
 
-This guide assumes RBAC as the choice strategy for authorization.
+This guide assumes RBAC as the choice strategy for authorization, and is the default strategy given by Spring Security 5.
 
 ## The Application
 
@@ -59,9 +61,9 @@ interface TreeService {
 We have 2 functions and a static list that 
 1) returns a Mono of leaf colors.
 2) returns a Flux of leaf colors.
-3) The list of leaf colors.
+3) Representing supported leaf colors.
 
-We can implement this by doing the actual work for return our Mono/Flux streams of Strings:
+We can then implement this Mono/Flux streams of Strings:
 
 ```kotlin
 class TreeServiceImpl : TreeService {
@@ -76,7 +78,7 @@ class TreeServiceImpl : TreeService {
 }
 ```
 
-And add another interface for RSocket Controller mappings:
+Subclass the service interface for our RSocket Controller mapping:
 
 ```kotlin
 interface TreeControllerMapping : TreeService {
@@ -88,7 +90,7 @@ interface TreeControllerMapping : TreeService {
 }
 ```
 
-We will simply apply authorization to our service with a well placed `@PreAuthorize` expression. We can create an interface as configuration for Spring Security annotations on our example service:
+Next, another subclass that applies Spring Security annotations. Securing the services with what level of authorization our application requires. Use [@PreAuthorize](), which is the preferred way for securing reactive streams through annotation.
 
 ```kotlin
 interface TreeServiceSecurity : TreeService {
@@ -100,12 +102,12 @@ interface TreeServiceSecurity : TreeService {
     override fun rakeForLeaves(): Flux<String>
 }
 ```
-Secure the services with what level of authorization your application requires. In the above example,
-we use [@PreAuthorize]() which is the method for securing reactive streams through annotation.
+
+Finally, we can put the whole thing together and expose it as an RSocket service.
 
 ### Putting the App together
 
-The production appliation will configure security rules, build the exposed services, and provide other support beans that we will discuss later on. In the next listing, we will look at security related annotations and our service configuration. The rest will be discussed as we move on.
+The production application will configure security rules, create the exposed services, and provide other support beans that we will discuss later on. In the next listing, we will look at enabling Spring Security for our service configuration.
 
 ```kotlin
 @EnableReactiveMethodSecurity  // 1
@@ -118,8 +120,8 @@ class App {
     @Controller
     class ServerTreeController : TreeControllerMapping,
             TreeServiceSecurity, TreeService by TreeServiceImpl() {  // 3
-        @MessageMapping("status")
-        fun status(): Mono<Boolean> = Mono.just(true)
+        fun status(@AuthenticationPrincipal user: Mono<UserDetails>): Mono<String> =
+                user.hasElement().map (Boolean::toString)
     }
 
 // ...
@@ -133,22 +135,23 @@ class App {
 }
 ```
 
-1) The first thing to do in securing an RSocket app is to enable security specific to RSocket itself, the [RSocketSecurity]() bean. This is done by declaring @[EnableRSocketSecurity]() onto the main configuration class. What this does is as stated in documentation -  it allows configuring RSocket based security. 
-2) Secondly, enabling security on our streams in service methods is another concern.  Thus, to enable the usage of Spring's own method security annotations, add the @[EnableReactiveMethodSecurity]() annotation to the main configuraiton class. At a deper level, this configures Reactive Publishers Hooks to decorate our streams with pre and post advices that access [SecurityContext]() object. 
-3) The controller is fully configured here, along with an un-secure `status` route. The status route should only tell us that we are authenticated by returning a boolean.
+1) The first thing to do in securing an RSocket app is to enable security specific to RSocket itself, the [RSocketSecurity]() bean. This is enabled by decorating @[EnableRSocketSecurity]() onto the main configuration class. What this does is as stated in documentation -  it allows configuring RSocket based security. 
+2) To enable the usage of Spring's own method security annotations on Reactive Streams, add the @[EnableReactiveMethodSecurity]() annotation to the main configuraiton class. At a deper level, this configures Reactive Publishers Hooks to decorate our streams with pre and post advices that access [SecurityContext]() object. 
+3) The controller is fully configured here, along with an added un-secure `status` route. The status uses [@AuthenticationPrincipal]() to tell whether we are really logged in by returning boolean.
 
-### Configure RSocket Security 
+** ReactiveAuthenticationManager paragraph
+### Configure RSocket Security
 
-With `@EnableRSocketSecurity`, we gain RSocket security through [RSocket Interceptors](). Interceptors have the ability to work during, before or after a scope in processing. For RSocket, this means any of the following levels:
+With `@EnableRSocketSecurity`, we gain RSocket security through [RSocket Interceptors](). Interceptors have the ability to work during, before or after a `level` in processing. For RSocket, this means any of the following levels:
 
 * Transport level
 * At the level of accepting new connections
 * Performing requests
 * Responding to requests
 
-Since a payload can have many metadata formats to confer credential exchange, Spring's [RSocketSecurity]() bean provides a fluent DSL for configuring Simple, Basic, JWT, and custom authentication methods at these level, in addition to application-specific RBAC settings. This DSL ultimately describe a set of [AuthenticationPayloadInterceptor]()'s that converts payload metdata into an [Authentication]() instances at runtime.
+Since a payload can have many metadata formats to confer credential exchange, Spring's [RSocketSecurity]() bean provides a fluent builder for configuring Simple, Basic, JWT, and custom authentication methods at these level, in addition to application-specific RBAC settings. This builder will describe a set of [AuthenticationPayloadInterceptor]()'s that converts payload metdata into an [Authentication]() instances at runtime.
 
-Lets look at the [SecuritySocketAcceptorInterceptorConfiguration]() class that sets up default security configuration which we will need for this demo. This class, imported by `@EnableRSocketSecurty`, will configure a [PayloadSocketAcceptorInterceptor]() using RSocketSecurity's DSL:
+To further our understanding of, lets examine the [SecuritySocketAcceptorInterceptorConfiguration]() class, which sets up the default security configuration for RSocket. This class, imported by `@EnableRSocketSecurty`, will configure a [PayloadSocketAcceptorInterceptor]() for simple and basic authentications, while requiring authentication for requests:
 
 ```java
 package org.springframework.security.config.annotation.rsocket;
@@ -167,9 +170,9 @@ class SecuritySocketAcceptorInterceptorConfiguration {
 }
 ```
 
-The `authorizePayload` method decides how we can access the server, and thus is something you will want to customize. The operations we see configure above include:
+The `authorizePayload` method decides how we can apply authorization at the server setup and request, and thus is something you will want to customize. The default operations we see configured above include:
 
-1) Basic credential passing for backwards compatability; for a time, before Simple was accepted as the leading spec.
+1) Basic credential passing for backwards compatability; this is deprecated.
 2) [Simple](https://github.com/rsocket/rsocket/blob/master/Extensions/Security/Simple.md) credential passing is supported by default; this is the winning spec and superceeds Basic.
 3) Access control rules that specifies which operations must be authenticated before being granted access to the server. 
 4) ensures `setup` operations happen with authentication
@@ -180,11 +183,11 @@ The `authorizePayload` method decides how we can access the server, and thus is 
 
 ### Spring Security User()s
 
-Spring Security provides concrete [User]() objects that implement the [UserDetail]() interface. This interface is used internally and shold be subclassed when you have specific needs. The [User.UserBuilder]() object provides a fluent DSL for describing instances of UserDetail.
+Spring Security provides concrete [User]() objects that implement the [UserDetail]() interface. This interface is used internally and shold be subclassed when you have specific needs. The [User.UserBuilder]() object provides a fluent builder for describing instances of UserDetail.
 
-Spring Security comes with components to handle UserDetail storage. This activity is exposed for Reactive services, through [ReactiveUserDetailsService](). The easiest way to use this is by creating an instance of the in-memory [MapReactiveUserDetailService]() provided out of the box.
+Spring Security comes with components to handle UserDetail storage. This activity is exposed for Reactive services, through [ReactiveUserDetailsService](). The easiest way to use this is by creating an instance of the in-memory [MapReactiveUserDetailService]().
 
-The next sample shows the use of these components in action:
+To review, we can completely populate a ReactiveUserDetailService:
 
 ```kotlin
     @Bean
@@ -203,15 +206,13 @@ The next sample shows the use of these components in action:
             )
 ```
 
-Sometimes you want to select a specific encryption algorithm when specifying a password programatically such as above. However, this is specified by:
+Sometimes you want to select a specific encryption algorithm when specifying a password programatically such as above. To do this:
 
- 1) specify `noop` (plaintext) password encoding using curly braces and the encoding name `{noop}` or otherwise named encryption algorithm. In the background, Spring Security uses an [DelegatingPasswordEncoder]() to determine the proper encoder to use such as pbkdf2, scrypt, sha256, etc...
+ 1) specify `noop` (plaintext) password encoding using curly braces and the encoding name `{noop}` or otherwise named encryption algorithm. In the background, Spring Security uses an [DelegatingPasswordEncoder]() to determine the proper encoder to use such as pbkdf2, scrypt, sha256, etc... Please do not use plaintext `{noop}` in production!
 
 ### Security in Reactive Streams
 
-With the usage of `@EnableReactiveMethodSecurity` in our main class, we gained the ability to annotate reactive streams with rules for authorization. This means we can use [@PreAuthorize]() to introspect the authenticated user for necessary credentials. There are a variety of built-in expressions that we can use. 
-
-> **_CURRENTLY_**: For custom expressions, Spring Security supports return values of `boolean` and cannot be wrapped in deferred values such as a reactive `Publisher`. As such, the expressions must not block.
+With the usage of `@EnableReactiveMethodSecurity` in our main class, we gained the ability to annotate reactive streams with rules for authorization. This happens mainliy in the [ReactiveAuthorizationManager]() instances for specific use cases. Out of the box, we get the support for a variety of expressions with [@PreAuthorize]() to introspect the authenticated user for necessary credentials. There are a variety of built-in expressions that we can use. 
 
 Here are built-in expressions supported as defined in [SecurityExpressionOperations]() and described in [the Docs](https://docs.spring.io/spring-security/reference/servlet/authorization/expression-based.html):
 
@@ -234,20 +235,20 @@ Here are built-in expressions supported as defined in [SecurityExpressionOperati
 
 To gain fundamental understanding of Authorization, I encourage you to read the [Spring Docs](https://docs.spring.io/spring-security/reference/servlet/authorization/architecture.html). This documentation is robust and does well in describing exactly how Authorization operates under the hood - especially for situations where you have legacy framework code and want to customize.
 
-By default, you will have little interaction with a [ReactiveAuthorizationManager]() or any [AuthorizationManager]()'s which computes authorization where applied.  To use Authorization with Reactive streams, use [@PreAuthorize]() annotations that let us express authorization requiremts.
+> **_CURRENTLY_**: For custom expressions, Spring Security supports return values of `boolean` and cannot be wrapped in deferred values such as a reactive `Publisher`. As such, the expressions must not block.
 
 ## Secure the Client
 
 Spring RSocket creates a [RSocketRequesterBuilder]() bean at startup. This bean provides a builder for creating new [RSocketRequesters](). An `RSocketRequester` provides a single connection interface to RSocket operations usually across a network.
 
-RSocket Security can be applied to connection level or request level. It is up to how your application uses the connection. If a connection is shared across multiple [Principal]() (Users) then it is recommended to authenticate the setup with it's own 'connectivity' user, or to connect normally, and secure each request. We will discuss both methods below.  
+RSocket Security can be applied to connection level or request level. It is up to how your application uses the connection. If a connection is shared across multiple [Principal]() (Users) then it is recommended to authenticate the setup with it's own 'connectivity' user, or to connect with a 'setup' user, then each request as another user. We will discuss both methods below.  
 
 ### Securing at connection time
 
 We can secure each connection by sending metadata in the SETUP frame. To configure this kind of authentication, use a [RSocketRequester.Builder]() builder. This builder lets us specify `setupMetadata`
 to enable our setup frame to contain our user credentials.
 
-A RequestFactory class that does this job can be made so we dont repeat the connection builder every time a requester is needed. We will create the authenticating Requester below:
+Our custom `RequestFactory` class makes it so we dont repeat the connection builder every time a requester is needed. We either need an authenticated connection or a non-authenticated connection. We will create the authenticating Requester below:
 
 ```kotlin
 open class RequesterFactory(private val port: String) {
@@ -268,11 +269,11 @@ open class RequesterFactory(private val port: String) {
 ```
 The lines of code we want to inspect here relate to the specifics for setup frame authentication metadata:
 
-1) Requester needs to know how to encode our `SIMPLE` v0 authentication metadata
-2) Which needs to be registered as an encoder in Spring's [RSocketStrategies]()
-3) Provide the credentials going into setup with the `setupMetdata` method on supported `RSocketbuilder.Builder`s
+1) Requester needs to know how to encode our `SIMPLE` authentication metadata.
+2) Which needs to be registered as an encoder in Spring's [RSocketStrategies]().
+3) Then use `setupMetadata` to encode credentials going into the setup frame.
 
-Additionally, we may not want to secure the SETUP portion. Lets create a method that returns a authentication-less requester.
+Next, need a non-authenticated setup requester:
 
 ```kotlin
     open fun requester(): RSocketRequester =
@@ -291,9 +292,7 @@ Next, we can create some tests to demonstrate connectivity and test whether our 
 
 ### Testing the client and server
 
-The first thing we want to is test whether authenticated connections are truely secure by ensuring proper rejection of non setup metadata laden requests.  This demo inclues a test class called `RequesterFactoryTests` because we're testing  `RequesterFactory` as the factory of `RSocketRequester`.
-
-Lets take a look at how we configure and test the first case where the setup is NOT authenticated:
+The first thing we want to is test whether authenticated connections are truely secure by ensuring proper rejection of non-authenticated setup requests. This listing, we will look at the options chosen in this test case:
 
 ```kotlin
 @SpringBootTest         // 1
@@ -313,8 +312,8 @@ class RequesterFactoryTests {
 ```
 Whats happening is a usual test setup, but lets inspect what our test means.
 
-1) Using `@SpringBootTest` ensures we get full autowiring of our production code to setup the server.
-2) Issue a requester that omits setup authentication metadata.
+1) Using `@SpringBootTest` ensures we get full autowiring of our production code to setup the RSocket server.
+2) Create a requester that omits setup authentication metadata.
 3) The test site is simple and merely sends a request to the `status` route that returns whether we are authenticated or not.
 4) Because our server configuration states that setup must be authenticated, we should expect a [RejectedSetupExeption] error upon request.
 
@@ -336,14 +335,14 @@ Next, we will test when we send authenticated requests without autheticating set
     }
 ```
 
-This test case is very similar to the previous one with one exception:
+This test case is very similar to the previous one except:
 
-1) We only added the metadata line that tells `RSocketRequester` to send authentication metadata along with the request. 
-2) This wont work, and will result with RejectedSetupException since our server expects authentication in the SETUP payload.
+1) We only authenticate the request with simple authentication. 
+2) This wont work, and will result with RejectedSetupException since our server expects authentication in the `setup` payload.
 
 ### Authorization in tests
 
-Next, we will test for proper setup authentication and that roles are truely locked down on our server routes. Recall earlier we have a [TreeServiceSecurity]() class that adds `@PreAuthorize` to our service methods. Lets 
+Next, we will test for proper setup authentication and to check that our `@PreAuthorize` rules are functioning. Recall earlier we have a [TreeServiceSecurity]() class that adds `@PreAuthorize` to our service methods. Lets 
 make a request without having sufficient privileges:
 
 ```kotlin
@@ -359,13 +358,23 @@ make a request without having sufficient privileges:
     }
 ```
 
-This test issues a requester with authentication setup payloads, so the factory method includes username and password. Dont do this in production. It's better to use a secrets store or otherwise safe credential holder.
+This test will:
 
-1) issues the authenticated requester, this user is the 'raker' user and does not have 'shake' authority.
+1) create the authenticated requester. But this user is the 'raker' and does not have 'shake' authority.
 2) sends a request to the 'shake' route. This route is @PreAuthorized protected for users having 'shake' authority.
-3) Since we dont have this kind of role for the 'raker' user, we will get [ApplicationErrorException]() with the message 'Denied'.
+3) Since we dont have this kind of permission for the 'raker' user, we will get [ApplicationErrorException]() with the message 'Denied'.
+
 
 ## Summary
+
+
+Understanding a Spring Security example with Kotlin 
+Understanding nuts and bolts of Security Configuration
+Understanding how we can user permissions in a Spring Security app.
+Understanding how we can apply a simple authentication scheme to a Spring Security app.
+
+
+
 
 ## Next Steps
 
