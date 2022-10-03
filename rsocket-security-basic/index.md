@@ -23,15 +23,15 @@ level1: Building Modern Applications
 level2: Frameworks and Languages
 ---
 
-This guide will discuss RSocket service security with Spring Boot, by way of Spring Security. We will surface endpoints that are locked down by Spring Security's authorization as well as implement simple authentication for the connection and request scopes. This guide will inform you of the additional configuration options provided when configuring for Spring Security on a Spring Boot 2.7.x/RSocket application. 
+This guide will discuss RSocket service security with Spring Boot, by way of Spring Security. We will surface RSocket routes that enforce specific security measures and describe what this means internally. This guide will inform you of the additional configuration options provided when configuring for Spring Security on a Spring Boot 2.7.x/RSocket application.
+
+It is assumed the developer knows Kotlin, uses Spring Boot, and has an understanding of the [Reactive Streams](). If you're new to Spring Security for Reactive streams, then this guide should help shed light on the subject. Of course, the best place to understand are [The Guides](), please read them!
 
 ## Motivation
 
-Writing an RSocket with Spring Boot application is not hard and takes just a few lines of code. Securing that app can be simple, but you may now already know that security is a broad and widely discussed topic. This example is designed to help you to quickly understand the basics of integrating Spring Security into your Reactive application. We will cover both authentication and authorization aspects. There are a number of strategies to authenticate with such as JWT, Kerberos, and Password to name a few. This guide will focus on simple conventions for brevity.
+Writing secure RSocket apps with Spring Boot application is not hard and takes just a few lines of code.But you may now already know that security is a broad and widely discussed topic. This example is designed to help you to quickly understand the basics of integrating Spring Security into your Reactive / RSocket application. We will cover the authentication and authorization aspects and how they are applied within Spring. There are a number of strategies to authenticate with such as JWT, Kerberos, and Password to name a few. This guide will focus on the `simple` strategy.
 
 We want our applications to respond to a user's privilege level; as multi-user applications tend to be specific with regards to feature availability. What emerges through Spring Security, is Role Based Access Control - the ability to make privilege specific logic feasable and with minimal boilerplate.
-
-It is assumed the developer knows Kotlin, uses Spring Boot, and has an understanding of the [Reactive Streams](). If you're new to Spring Security for Reactive streams, then this guide should help shed light on the subject. Of course, the best place to understand are [The Guides](), please read them!
 
 ### Authorization vs Authentication
 
@@ -175,9 +175,9 @@ The `authorizePayload` method decides how we can apply authorization at the serv
 1) Basic credential passing for backwards compatability; this is deprecated.
 2) [Simple](https://github.com/rsocket/rsocket/blob/master/Extensions/Security/Simple.md) credential passing is supported by default; this is the winning spec and superceeds Basic.
 3) Access control rules that specifies which operations must be authenticated before being granted access to the server. 
-4) ensures `setup` operations happen with authentication
-5) Any request operation requires authentication
-6) Any other operation is permitted regardless of authentication
+4) ensures `setup` operations happen with authentication.
+5) Any request operation requires authentication.
+6) Any other operation is permitted regardless of authentication.
 
 > **_Request Vs Setup:_** Spring Security defines any `request` operation one of the following; FIRE_AND_FORGET, REQUEST_RESPONSE, REQUEST_STREAM, REQUEST_CHANNEL and METADATA_PUSH. SETUP and PAYLOAD types are considered `setup` operations.
 
@@ -206,13 +206,13 @@ To review, we can completely populate a ReactiveUserDetailService:
             )
 ```
 
-Sometimes you want to select a specific encryption algorithm when specifying a password programatically such as above. To do this:
+in this example, we note that:
 
- 1) specify `noop` (plaintext) password encoding using curly braces and the encoding name `{noop}` or otherwise named encryption algorithm. In the background, Spring Security uses an [DelegatingPasswordEncoder]() to determine the proper encoder to use such as pbkdf2, scrypt, sha256, etc... Please do not use plaintext `{noop}` in production!
+ 1) The builder supports the algorithm hint using curly braces. Here we specify `noop` (plaintext) password encoding. In the background, Spring Security uses an [DelegatingPasswordEncoder]() to determine the proper encoder to use such as pbkdf2, scrypt, sha256, etc... Please do not use plaintext `{noop}` in production!
 
 ### Security in Reactive Streams
 
-With the usage of `@EnableReactiveMethodSecurity` in our main class, we gained the ability to annotate reactive streams with rules for authorization. This happens mainliy in the [ReactiveAuthorizationManager]() instances for specific use cases. Out of the box, we get the support for a variety of expressions with [@PreAuthorize]() to introspect the authenticated user for necessary credentials. There are a variety of built-in expressions that we can use. 
+With the usage of `@EnableReactiveMethodSecurity` in our main class, we gained the ability to annotate reactive streams with rules for authorization. This happens mainliy in the [ReactiveAuthorizationManager]() instances for specific use cases. Out of the box, we get the support for a variety of expressions with [@PreAuthorize]() to introspect the authenticated user for necessary privileges. There are a variety of built-in expressions that we can use. 
 
 Here are built-in expressions supported as defined in [SecurityExpressionOperations]() and described in [the Docs](https://docs.spring.io/spring-security/reference/servlet/authorization/expression-based.html):
 
@@ -292,13 +292,13 @@ Next, we can create some tests to demonstrate connectivity and test whether our 
 
 ### Testing the client and server
 
-The first thing we want to is test whether authenticated connections are truely secure by ensuring proper rejection of non-authenticated setup requests. This listing, we will look at the options chosen in this test case:
+The first thing we want to is test whether authenticated connections are truely secure by ensuring proper rejection of a un-authenticated setup. This listing, we will look at the options chosen in this test case:
 
 ```kotlin
 @SpringBootTest         // 1
 class RequesterFactoryTests {
     @Test
-    fun `no setup metadata request is REJECTEDSETUP`(@Autowired requesterFactory: RequesterFactory) {
+    fun `no setup authentication is REJECTEDSETUP`(@Autowired requesterFactory: RequesterFactory) {
         val requester = requesterFactory.requester()    // 2
 
         val request = requester
@@ -364,19 +364,11 @@ This test will:
 2) sends a request to the 'shake' route. This route is @PreAuthorized protected for users having 'shake' authority.
 3) Since we dont have this kind of permission for the 'raker' user, we will get [ApplicationErrorException]() with the message 'Denied'.
 
+Although this demo was on Security, it would be wise to further securing of the demo by using TLS security across the transport. This way, noone can snoop the network for credential payloads.
 
-## Summary
+## Closing
 
-
-Understanding a Spring Security example with Kotlin 
-Understanding nuts and bolts of Security Configuration
-Understanding how we can user permissions in a Spring Security app.
-Understanding how we can apply a simple authentication scheme to a Spring Security app.
-
-
-
-
-## Next Steps
+This guide was meant to introduce you to Spring Boot, Kotlin, and Spring Security. One key takeaway, that Spring Security configuration can allow simple or complex authentication schemes. Understanding how permissions work out of the box in Spring Security, and applying authorization to Reactive Methods. Then next iteration will utilize a increasingly used authentication strategy - JWT. 
 
 ## Informational and Learning Material
 
