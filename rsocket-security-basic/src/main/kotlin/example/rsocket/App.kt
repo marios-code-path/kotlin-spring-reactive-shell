@@ -32,7 +32,6 @@ class App {
         @MessageMapping("status")
         fun status(@AuthenticationPrincipal user: Mono<UserDetails>): Mono<String> =
                 user.hasElement().map(Boolean::toString)
-
     }
 
     @Bean

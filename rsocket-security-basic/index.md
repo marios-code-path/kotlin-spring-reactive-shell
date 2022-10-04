@@ -51,7 +51,7 @@ interface TreeService {
     fun rakeForLeaves(): Flux<String> // 2
 
     companion object {
-        val LEAF_COLORS = listOf("Green", "Yellow", "Orange", "Brown", "Red") // 3
+        val LEAF_COLORS = listOf("Green", "Yellow", "Orange", "Brown", "Red")
     }
 }
 ```
@@ -60,7 +60,7 @@ Above, we have 2 functions and a static list that:
 
 1) Return a `Mono<String>` of leaf colors.
 2) Return a `Flux<String>` of leaf colors.
-3) List of Strings for supported leaf colors.
+3) A third 'status' route is exposed later.
 
 We can then write the backing implementation:
 
@@ -140,9 +140,9 @@ Since reactive operators get access to this `SecurityContext`, Spring Security (
 
 1) Enabled the [RSocketSecurity](https://github.com/spring-projects/spring-security/blob/main/config/src/main/java/org/springframework/security/config/annotation/rsocket/RSocketSecurity.java) bean by decorating a configuration class with [@EnableRSocketSecurity](https://github.com/spring-projects/spring-security/blob/main/config/src/main/java/org/springframework/security/config/annotation/rsocket/EnableRSocketSecurity.java). What this does is as stated in documentation -  it allows configuring RSocket based security. 
 2) To enable the usage of Spring's own method security annotations on Reactive Streams (return types of [Publisher](https://www.reactive-streams.org/reactive-streams-1.0.3-javadoc/org/reactivestreams/Publisher.html?is-external=true)), add the @[EnableReactiveMethodSecurity](https://github.com/spring-projects/spring-security/blob/210693eb6bd0cba51874ce150c73090c95d4e08b/docs/modules/ROOT/pages/reactive/authorization/method.adoc) annotation to the main configuraiton class. 
-3) The RSocket messaging controller is fully configured here, along with an un-secure `status` route. The status route uses [@AuthenticationPrincipal](https://github.com/spring-projects/spring-security/blob/main/web/src/main/java/org/springframework/security/web/bind/annotation/AuthenticationPrincipal.java) to inject - if available - the UserDetails object from the afformentioned `SecurityContext`.
+3) The RSocket messaging controller is fully configured here, along with the third un-secure `status` route. The status route uses [@AuthenticationPrincipal](https://github.com/spring-projects/spring-security/blob/main/web/src/main/java/org/springframework/security/web/bind/annotation/AuthenticationPrincipal.java) to inject - if available - the UserDetails object from the afformentioned `SecurityContext`.
 
-> **_Customize the User:_** There is a nice to know informational example that describes how one would resolve a custom User object with the [AuthenticationPrincipalArgumentResolver](https://docs.spring.io/spring-security/site/docs/current/api/org/springframework/security/web/bind/support/AuthenticationPrincipalArgumentResolver.html).
+> **_Customize the User:_** There is a nice to know informal example that describes how one would resolve a custom User object with the [AuthenticationPrincipalArgumentResolver](https://docs.spring.io/spring-security/site/docs/current/api/org/springframework/security/web/bind/support/AuthenticationPrincipalArgumentResolver.html).
 
 ## Application Users (Principal)
 
