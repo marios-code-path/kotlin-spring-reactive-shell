@@ -4,6 +4,7 @@ import example.rsocket.clientconfig.RequesterFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.messaging.rsocket.RSocketRequester
 import org.springframework.messaging.rsocket.retrieveFlux
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.shell.Availability
 import org.springframework.shell.standard.ShellComponent
 import org.springframework.shell.standard.ShellMethod

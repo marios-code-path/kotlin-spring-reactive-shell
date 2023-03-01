@@ -1,26 +1,63 @@
 package example.rsocket.security
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import example.rsocket.clientconfig.RequesterFactory
 import example.rsocket.service.TreeService
+import example.rsocket.domain.TreeSpecies
 import io.rsocket.exceptions.ApplicationErrorException
 import io.rsocket.exceptions.RejectedSetupException
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.messaging.rsocket.RSocketRequester
-import org.springframework.messaging.rsocket.connectTcpAndAwait
 import org.springframework.messaging.rsocket.retrieveMono
-import org.springframework.security.rsocket.metadata.SimpleAuthenticationEncoder
 import org.springframework.security.rsocket.metadata.UsernamePasswordMetadata
-import org.springframework.test.context.TestPropertySource
+import reactor.core.publisher.Hooks
+import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
 
 @SpringBootTest
-class RequesterFactoryTests {
+class ClientIntegrationTests {
+
 
     @Test
     fun contextLoads() {
+    }
+
+    @Test
+    fun `can decode TreeSpecies`(@Autowired objectMapper: ObjectMapper) {
+            println("Hello World! "  + objectMapper.writeValueAsString(TreeSpecies(34L, "LONG")))
+    val newTree : TreeSpecies = objectMapper.readValue("{\"id\":34,\"leaf\":\"LONG\"}", TreeSpecies::class.java)
+
+        println(newTree.id)
+    }
+
+    @Test
+    fun `sends TreeSpecies Oak is not accepted`(@Autowired requesterFactory: RequesterFactory) {
+        Hooks.onOperatorDebug()
+
+        val requester = requesterFactory.requester("shaker", "nopassword")
+
+        val request = requester
+                .route("species")
+                .data(Mono.just(TreeSpecies(1L, "Oak")), TreeSpecies::class.java)
+                .retrieveMono<TreeSpecies>()
+
+        StepVerifier
+                .create(request)
+                .verifyError(ApplicationErrorException::class.java)
+
+        val second = requester
+                .route("species")
+                .data(TreeSpecies(2L, "Birch"))
+                .retrieveMono<TreeSpecies>()
+
+        StepVerifier
+                .create(second)
+                .assertNext { species ->
+                    Assertions.assertThat(species.leaf).isEqualTo("BIRCH")
+                }
+                .verifyComplete()
     }
 
     @Test
@@ -28,7 +65,7 @@ class RequesterFactoryTests {
         val requester = requesterFactory.requester()
 
         val request = requester
-                .route("status").retrieveMono<String>()
+                .route("status/123").retrieveMono<String>()
 
         StepVerifier
                 .create(request)
@@ -40,7 +77,7 @@ class RequesterFactoryTests {
         val requester = requesterFactory.requester()
 
         val request = requester
-                .route("status")
+                .route("status/345")
                 .metadata(UsernamePasswordMetadata("shaker", "nopassword"), RequesterFactory.SIMPLE_AUTH)
                 .retrieveMono<String>()
 
@@ -51,6 +88,9 @@ class RequesterFactoryTests {
 
     @Test
     fun `incorrect password request is REJECTEDSETUP Invalid Credentials`(@Autowired requesterFactory: RequesterFactory) {
+        Hooks.onOperatorDebug()
+
+
         val request = requesterFactory
                 .requester("shaker", "wrongpassword")
                 .route("shake")
@@ -83,7 +123,10 @@ class RequesterFactoryTests {
     fun `authenticated request for status is resolved`(@Autowired requesterFactory: RequesterFactory) {
         val request = requesterFactory
                 .requester("shaker", "nopassword")
-                .route("status")
+                .route("status/1234563")
+//                .metadata { es ->
+//                    es.metadata("userid:1234567890", MimeTypeUtils.parseMimeType(WellKnownMimeType.TEXT_PLAIN.string))
+//                }
                 .retrieveMono<String>()
 
         StepVerifier

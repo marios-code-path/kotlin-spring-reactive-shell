@@ -30,7 +30,7 @@ class TelephoneCommands(val repo: SecurityContextRepository) {
                         val message = "$currentUser: @$username - $message"
                         callQueue.offer(message)
                     }
-                    .block()
+                    //.block()
 
     @ShellMethod
     @ShellMethodAvailability("checkLoggedIn")
@@ -40,7 +40,7 @@ class TelephoneCommands(val repo: SecurityContextRepository) {
             .doOnEach{ signal ->
                 callQueue.stream().forEach(::println)
             }
-            .block()
+            //.block()
 
     fun checkLoggedIn(): Availability = when (repo.load().block() != null) {
                 null -> Availability.unavailable("You are not logged in.")

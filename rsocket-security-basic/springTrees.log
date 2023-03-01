@@ -12,3 +12,24 @@
 1661320025456:login --username gardner --password superuser
 1661320026897:rake
 1661320028088:exit
+1675893411957:helo
+1675893413186:hello
+1675893414439:help
+1675893553546:quit
+1675893762867:login --user shaker --password nopassword
+1675893764378:help
+1675893766488:rake
+1675893772301:login --user shaker --password nopasswordf
+1675893773683:rake
+1675893782139:login --username shaker --password nopassword
+1675893783124:rake
+1675893801834:login --username raker --password nopassword
+1675893803125:rake
+1675893824469:login --username shaker --password nopassword
+1675893825473:shake
+1675893828769:rake
+1675893839723:login --username connector --password nopassword
+1675893841334:rake
+1675893851601:login --username raker --password nopassword
+1675893852657:rake
+1675893978842:exit
