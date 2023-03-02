@@ -12,7 +12,7 @@ import kotlin.random.Random
 
 class TreeServiceImpl : TreeService {
 
-    override fun shakeForLeaf(): Mono<String> = Mono.just(LEAF_COLORS.get(Random.nextInt(LEAF_COLORS.size)))
+    override fun shakeForLeaf(): Mono<String> = Mono.just(LEAF_COLORS[Random.nextInt(LEAF_COLORS.size)])
 
     override fun rakeForLeaves(): Flux<String> = Flux
             .fromStream(

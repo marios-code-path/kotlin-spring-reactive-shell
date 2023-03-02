@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.messaging.rsocket.retrieveMono
 import org.springframework.security.rsocket.metadata.UsernamePasswordMetadata
+import org.springframework.test.annotation.DirtiesContext
+import org.springframework.util.MimeTypeUtils
 import reactor.core.publisher.Hooks
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
@@ -26,8 +28,8 @@ class ClientIntegrationTests {
 
     @Test
     fun `can decode TreeSpecies`(@Autowired objectMapper: ObjectMapper) {
-            println("Hello World! "  + objectMapper.writeValueAsString(TreeSpecies(34L, "LONG")))
-    val newTree : TreeSpecies = objectMapper.readValue("{\"id\":34,\"leaf\":\"LONG\"}", TreeSpecies::class.java)
+        println("Hello World! " + objectMapper.writeValueAsString(TreeSpecies(34L, "LONG")))
+        val newTree: TreeSpecies = objectMapper.readValue("{\"TreeSpecies\":{\"id\":34,\"leaf\":\"LONG\"}}", TreeSpecies::class.java)
 
         println(newTree.id)
     }
@@ -61,11 +63,12 @@ class ClientIntegrationTests {
     }
 
     @Test
+    // TODO: FIX The GlobalInterceptor is throwing an error
     fun `no setup metadata request is REJECTEDSETUP`(@Autowired requesterFactory: RequesterFactory) {
         val requester = requesterFactory.requester()
 
         val request = requester
-                .route("status/123").retrieveMono<String>()
+                .route("status.123").retrieveMono<String>()
 
         StepVerifier
                 .create(request)
@@ -77,7 +80,7 @@ class ClientIntegrationTests {
         val requester = requesterFactory.requester()
 
         val request = requester
-                .route("status/345")
+                .route("status.345")
                 .metadata(UsernamePasswordMetadata("shaker", "nopassword"), RequesterFactory.SIMPLE_AUTH)
                 .retrieveMono<String>()
 
@@ -90,9 +93,8 @@ class ClientIntegrationTests {
     fun `incorrect password request is REJECTEDSETUP Invalid Credentials`(@Autowired requesterFactory: RequesterFactory) {
         Hooks.onOperatorDebug()
 
-
         val request = requesterFactory
-                .requester("shaker", "wrongpassword")
+                .requester("shaker", "wnopassword")
                 .route("shake")
                 .retrieveMono<String>()
 
@@ -103,8 +105,10 @@ class ClientIntegrationTests {
 
     @Test
     fun `authenticated request for shake is resolved`(@Autowired requesterFactory: RequesterFactory) {
-        val request = requesterFactory
+        val requester = requesterFactory
                 .requester("shaker", "nopassword")
+
+        val request = requester
                 .route("shake")
                 .retrieveMono<String>()
 
@@ -117,16 +121,16 @@ class ClientIntegrationTests {
                             .containsAnyOf(*TreeService.LEAF_COLORS.toTypedArray())
                 }
                 .verifyComplete()
+        requester.dispose()
     }
 
     @Test
     fun `authenticated request for status is resolved`(@Autowired requesterFactory: RequesterFactory) {
-        val request = requesterFactory
+        val requester = requesterFactory
                 .requester("shaker", "nopassword")
-                .route("status/1234563")
-//                .metadata { es ->
-//                    es.metadata("userid:1234567890", MimeTypeUtils.parseMimeType(WellKnownMimeType.TEXT_PLAIN.string))
-//                }
+
+        val request = requester
+                .route("status.1234563")
                 .retrieveMono<String>()
 
         StepVerifier
@@ -138,6 +142,8 @@ class ClientIntegrationTests {
                             .isEqualTo(true.toString())
                 }
                 .verifyComplete()
+
+        requester.dispose()
     }
 
     @Test

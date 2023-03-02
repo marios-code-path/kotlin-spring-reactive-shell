@@ -6,15 +6,12 @@ import example.rsocket.service.*
 import io.rsocket.core.RSocketServer
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration
-import org.springframework.boot.autoconfigure.rsocket.RSocketMessagingAutoConfiguration
-import org.springframework.boot.autoconfigure.rsocket.RSocketStrategiesAutoConfiguration
 import org.springframework.boot.rsocket.messaging.RSocketStrategiesCustomizer
 import org.springframework.boot.rsocket.server.RSocketServerCustomizer
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.context.annotation.Import
+import org.springframework.context.annotation.Scope
 import org.springframework.messaging.rsocket.RSocketRequester
 import org.springframework.messaging.rsocket.RSocketStrategies
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity
@@ -24,21 +21,21 @@ import org.springframework.security.core.userdetails.ReactiveUserDetailsService
 import org.springframework.security.core.userdetails.User
 import org.springframework.security.rsocket.metadata.SimpleAuthenticationEncoder
 import org.springframework.stereotype.Controller
+import org.springframework.web.util.pattern.PathPatternRouteMatcher
 
-@EnableReactiveMethodSecurity
+
 @EnableRSocketSecurity
+@EnableReactiveMethodSecurity
 @SpringBootApplication
-@Import(
-        JacksonAutoConfiguration::class,
-        RSocketStrategiesAutoConfiguration::class,
-        RSocketMessagingAutoConfiguration::class,
-)
 class App {
 
     @Configuration
     class StrategiesCustomizer : RSocketStrategiesCustomizer {
-        override fun customize(strategies: RSocketStrategies.Builder?) {
-            strategies!!.encoder(SimpleAuthenticationEncoder())
+        override fun customize(strategies: RSocketStrategies.Builder) {
+            strategies.apply {
+                encoder(SimpleAuthenticationEncoder())
+                routeMatcher(PathPatternRouteMatcher())
+            }
         }
     }
 
@@ -54,6 +51,7 @@ class App {
             TreeServiceSecurity, TreeService by TreeServiceImpl()
 
     @Bean
+    @Scope("prototype")
     fun requesterFactoryBean(@Value("\${spring.rsocket.server.port}") port: String, builder: RSocketRequester.Builder): RequesterFactory =
             RequesterFactory(builder, port)
 
@@ -66,12 +64,12 @@ class App {
                     User.builder()
                             .username("shaker")
                             .password("{noop}nopassword")
-                            .roles("SHAKE", "SPECIES")
+                            .roles("SHAKE", "SPECIES", "LOGIN")
                             .build(),
                     User.builder()
                             .username("raker")
                             .password("{noop}nopassword")
-                            .roles("RAKE")
+                            .roles("RAKE", "LOGIN")
                             .build(),
                     User.builder()
                             .username("connector")

@@ -1,17 +1,8 @@
 package example.rsocket.domain
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.annotation.JsonTypeName
 
 @JsonTypeName("TreeSpecies")
-class TreeSpecies
- {
-     var id: Long? = null
-     var leaf: String? = null
-
-     constructor(id: Long, leaf: String) {
-         this.id = id
-         this.leaf = leaf
-     }
-
-     constructor() { }
-}
+@JsonTypeInfo(include = JsonTypeInfo.As.WRAPPER_OBJECT, use = JsonTypeInfo.Id.NAME)
+data class TreeSpecies(val id: Long, val leaf: String)

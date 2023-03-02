@@ -12,7 +12,6 @@ import org.springframework.test.context.ActiveProfiles
 import reactor.test.StepVerifier
 
 @SpringBootTest
-@ActiveProfiles("LOGINONLY")
 class ClientSetupIntegrationTests {
     @Test
     fun `connection setup user then application user should pass`(@Autowired requesterFactory: RequesterFactory) {
